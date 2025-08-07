@@ -1,0 +1,69 @@
+package crawler
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
+)
+
+type Crawler struct {
+    Client http.Client
+}
+
+func New(client *http.Client) *Crawler {
+    return &Crawler{
+        Client: *client,
+    }
+}
+
+func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, error) {
+    res, err := r.Client.Get(url.String())
+    if err != nil {
+        return nil, fmt.Errorf("failed to request %s: %w", url.String(), err)
+    }
+    defer res.Body.Close()
+
+    contentType := res.Header.Get("Content-Type")
+    if !strings.HasPrefix(contentType, "text/") {
+        return nil, fmt.Errorf("page content %s was not type 'text', got: %s", url.String(), contentType)
+    }
+
+    if strings.HasPrefix(contentType, "text/html") {
+        parseHtml(res.Body)
+    } else {
+        parsePlaintext(res.Body)
+    }
+
+    return nil, nil
+}
+
+func parseHtml(r io.Reader) {
+    tokenizer := html.NewTokenizer(r)
+    for tokenizer.Err() == nil {
+        t := tokenizer.Token()
+        if t.DataAtom == atom.A {
+            for _, a := range t.Attr {
+                if a.Key == "href" {
+                    fmt.Println(a.Val)
+                }
+            }
+        }
+        tokenizer.Next()
+    }
+}
+
+func parsePlaintext(r io.Reader) {
+    scanner := bufio.NewScanner(r)
+    scanner.Split(bufio.ScanWords)
+
+    for scanner.Scan() {
+        fmt.Println(scanner.Text())
+    }
+}

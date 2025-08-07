@@ -11,3 +11,5 @@ with commercial entities, contain advertising, or track their visitors. Its
 purpose is to make accessible the treasure trove of independent blogs and
 digital gardens tended to by passionate individuals seeking to share their
 knowledge with others free of profit-driven intent.
+
+- [Humane Web Manifesto](https://humanewebmanifesto.com/)

@@ -13,57 +13,73 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-type Crawler struct {
-    Client http.Client
+type UserAgentChooser interface {
+	Choose() string
 }
 
-func New(client *http.Client) *Crawler {
-    return &Crawler{
-        Client: *client,
-    }
+type Crawler struct {
+	Client http.Client
+	UAC    UserAgentChooser
+}
+
+func NewCrawler(client *http.Client, userAgentChooser UserAgentChooser) *Crawler {
+	return &Crawler{
+		Client: *client,
+		UAC:    userAgentChooser,
+	}
 }
 
 func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, error) {
-    res, err := r.Client.Get(url.String())
-    if err != nil {
-        return nil, fmt.Errorf("failed to request %s: %w", url.String(), err)
-    }
-    defer res.Body.Close()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 
-    contentType := res.Header.Get("Content-Type")
-    if !strings.HasPrefix(contentType, "text/") {
-        return nil, fmt.Errorf("page content %s was not type 'text', got: %s", url.String(), contentType)
-    }
+	userAgent := r.UAC.Choose()
+	req.Header.Set(userAgentCanonicalHeader, userAgent)
 
-    if strings.HasPrefix(contentType, "text/html") {
-        parseHtml(res.Body)
-    } else {
-        parsePlaintext(res.Body)
-    }
+	fmt.Printf("set user agent: %s\n", userAgent)
 
-    return nil, nil
+	res, err := r.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to request %s: %w", url.String(), err)
+	}
+	defer res.Body.Close()
+
+	contentType := res.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "text/") {
+		return nil, fmt.Errorf("page content %s was not type 'text', got: %s", url.String(), contentType)
+	}
+
+	if strings.HasPrefix(contentType, "text/html") {
+		parseHtml(res.Body)
+	} else {
+		parsePlaintext(res.Body)
+	}
+
+	return nil, nil
 }
 
 func parseHtml(r io.Reader) {
-    tokenizer := html.NewTokenizer(r)
-    for tokenizer.Err() == nil {
-        t := tokenizer.Token()
-        if t.DataAtom == atom.A {
-            for _, a := range t.Attr {
-                if a.Key == "href" {
-                    fmt.Println(a.Val)
-                }
-            }
-        }
-        tokenizer.Next()
-    }
+	tokenizer := html.NewTokenizer(r)
+	for tokenizer.Err() == nil {
+		t := tokenizer.Token()
+		if t.DataAtom == atom.A {
+			for _, a := range t.Attr {
+				if a.Key == "href" {
+					fmt.Println(a.Val)
+				}
+			}
+		}
+		tokenizer.Next()
+	}
 }
 
 func parsePlaintext(r io.Reader) {
-    scanner := bufio.NewScanner(r)
-    scanner.Split(bufio.ScanWords)
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanWords)
 
-    for scanner.Scan() {
-        fmt.Println(scanner.Text())
-    }
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
 }

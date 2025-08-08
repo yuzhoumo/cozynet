@@ -1,3 +1,3 @@
 .PHONY: crawl
 crawl:
-	go run ./cmd/mycelium --seedfile=./internal/data/seed.txt
+	go run ./cmd/mycelium --agentsfile=./internal/data/agents.json --seedfile=./internal/data/seed.txt

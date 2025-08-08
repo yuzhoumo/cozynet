@@ -13,16 +13,16 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-type UserAgentChooser interface {
-	Choose() string
+type StringChooser interface {
+	Pick() string
 }
 
 type Crawler struct {
 	Client http.Client
-	UAC    UserAgentChooser
+	UAC    StringChooser
 }
 
-func NewCrawler(client *http.Client, userAgentChooser UserAgentChooser) *Crawler {
+func NewCrawler(client *http.Client, userAgentChooser StringChooser) *Crawler {
 	return &Crawler{
 		Client: *client,
 		UAC:    userAgentChooser,
@@ -35,7 +35,7 @@ func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, er
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	userAgent := r.UAC.Choose()
+	userAgent := r.UAC.Pick()
 	req.Header.Set(userAgentCanonicalHeader, userAgent)
 
 	fmt.Printf("set user agent: %s\n", userAgent)

@@ -2,15 +2,12 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 
 	"mycelium/internal/chooser"
-
-	"github.com/mroth/weightedrand/v2"
 )
 
 func initSeedUrls(path string) ([]*url.URL, error) {
@@ -44,37 +41,10 @@ func initSeedUrls(path string) ([]*url.URL, error) {
 	return res, nil
 }
 
-func loadUserAgentOptions(path string) ([]chooser.UserAgentOption, error) {
-	var options []chooser.UserAgentOption
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", path, err)
-	}
-
-	err = json.Unmarshal(content, &options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %w", path, err)
-	}
-
-	return options, nil
-}
-
 func initUserAgentChooser(path string) (*chooser.UserAgentChooser, error) {
-	userAgentOptions, err := loadUserAgentOptions(path)
+	userAgentOptions, err := chooser.LoadUserAgentOptions(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load agent file %s: %w", path, err)
 	}
-
-	var choices []weightedrand.Choice[string, int]
-	for _, opt := range userAgentOptions {
-		choices = append(choices, weightedrand.NewChoice(opt.UserAgent, opt.Percent))
-	}
-
-	randomChooser, err := weightedrand.NewChooser(choices...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create weighted random chooser: %w", err)
-	}
-
-	return chooser.NewUserAgentChooser(userAgentOptions, randomChooser), nil
+	return chooser.NewUserAgentChooser(userAgentOptions)
 }

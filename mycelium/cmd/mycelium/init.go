@@ -3,12 +3,20 @@ package main
 import (
 	"bufio"
 	"fmt"
+    "flag"
 	"net/url"
 	"os"
 	"path/filepath"
 
 	"mycelium/internal/chooser"
 )
+
+func initCliFlags(conf *MyceliumConfig) {
+	flag.StringVar(&conf.seedFilePath, "seedfile", "./seed.txt", "newline delimited list of seed urls")
+	flag.StringVar(&conf.agentsFilePath, "agentsfile", "./agents.json", "user agents json")
+	flag.StringVar(&conf.proxyFilePath, "proxyfile", "./proxies.json", "proxy list json")
+	flag.Parse()
+}
 
 func initSeedUrls(path string) ([]*url.URL, error) {
 	abspath, err := filepath.Abs(path)
@@ -39,6 +47,14 @@ func initSeedUrls(path string) ([]*url.URL, error) {
 	}
 
 	return res, nil
+}
+
+func initProxyChooser(path string) (*chooser.ProxyChooser, error) {
+    options, err := chooser.LoadProxyOptions(path)
+    if err != nil {
+        return nil, fmt.Errorf("failed to load proxy file %s: %w", path, err)
+    }
+    return chooser.NewProxyChooser(options), nil
 }
 
 func initUserAgentChooser(path string) (*chooser.UserAgentChooser, error) {

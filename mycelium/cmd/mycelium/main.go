@@ -2,35 +2,45 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/http"
 
 	"mycelium/internal/crawler"
 )
 
+type MyceliumConfig struct {
+	seedFilePath string
+	agentsFilePath string
+	proxyFilePath string
+}
+
+type Mycelium struct {
+    config MyceliumConfig
+}
+
 func main() {
-	var seedFilePath string
-	var agentsFilePath string
+    var app Mycelium
 
-	flag.StringVar(&seedFilePath, "seedfile", "./seed.txt", "newline delimited list of seed urls")
-	flag.StringVar(&agentsFilePath, "agentsfile", "./agents.json", "user agents json")
-	flag.Parse()
+    conf := app.config
+    initCliFlags(&conf)
 
-	urls, err := initSeedUrls(seedFilePath)
+	urls, err := initSeedUrls(conf.seedFilePath)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("successfully parsed %d urls\n", len(urls))
+    proxyChooser, err := initProxyChooser(conf.proxyFilePath)
+    if err != nil {
+        panic(err)
+    }
 
-	userAgentChooser, err := initUserAgentChooser(agentsFilePath)
+	userAgentChooser, err := initUserAgentChooser(conf.agentsFilePath)
 	if err != nil {
 		panic(err)
 	}
 
 	ctx := context.Background()
-	req := crawler.NewCrawler(&http.Client{}, userAgentChooser)
+	req := crawler.NewCrawler(&http.Client{}, proxyChooser, userAgentChooser)
 
 	for i := 0; i < 10; i++ {
 		fmt.Printf("Requesting %s\n", urls[i].String())

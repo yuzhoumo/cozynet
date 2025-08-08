@@ -18,14 +18,16 @@ type StringChooser interface {
 }
 
 type Crawler struct {
-	Client http.Client
-	UAC    StringChooser
+	client           http.Client
+    proxyChooser     StringChooser
+	userAgentChooser StringChooser
 }
 
-func NewCrawler(client *http.Client, userAgentChooser StringChooser) *Crawler {
+func NewCrawler(client *http.Client, proxyChooser StringChooser, userAgentChooser StringChooser) *Crawler {
 	return &Crawler{
-		Client: *client,
-		UAC:    userAgentChooser,
+		client: *client,
+        proxyChooser: proxyChooser,
+		userAgentChooser: userAgentChooser,
 	}
 }
 
@@ -35,12 +37,12 @@ func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, er
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	userAgent := r.UAC.Pick()
+	userAgent := r.userAgentChooser.Pick()
 	req.Header.Set(userAgentCanonicalHeader, userAgent)
 
 	fmt.Printf("set user agent: %s\n", userAgent)
 
-	res, err := r.Client.Do(req)
+	res, err := r.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request %s: %w", url.String(), err)
 	}

@@ -1,9 +1,9 @@
 package chooser
 
 import (
-    "encoding/json"
-    "fmt"
-    "os"
+	"encoding/json"
+	"fmt"
+	"os"
 )
 
 type ProxyOption struct {
@@ -13,9 +13,9 @@ type ProxyOption struct {
 }
 
 func (po *ProxyOption) String() string {
-    if po.Username != "" && po.Password != "" {
-        return fmt.Sprintf("http://%s:%s@%s", po.Username, po.Password, po.URL)
-    }
+	if po.Username != "" && po.Password != "" {
+		return fmt.Sprintf("http://%s:%s@%s", po.Username, po.Password, po.URL)
+	}
 	return fmt.Sprintf("http://%s", po.URL)
 }
 
@@ -50,5 +50,6 @@ func LoadProxyOptions(path string) ([]ProxyOption, error) {
 func (pc *ProxyChooser) Pick() string {
 	choice := pc.options[pc.index]
 	pc.index = (pc.index + 1) % len(pc.options)
+	fmt.Println(choice.String())
 	return choice.String()
 }

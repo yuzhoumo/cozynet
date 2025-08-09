@@ -18,27 +18,26 @@ type StringChooser interface {
 }
 
 type Crawler struct {
-	client           http.Client
-	proxyChooser     StringChooser
+	client           *http.Client
 	userAgentChooser StringChooser
 }
 
-func NewCrawler(optClient *http.Client, proxyChooser StringChooser, userAgentChooser StringChooser) *Crawler {
-	client := optClient
+func NewCrawler(client *http.Client, proxyChooser StringChooser, userAgentChooser StringChooser) *Crawler {
+	var crawler Crawler
+
+	crawler.client = client
 
 	if client == nil {
-		client = &http.Client{
-			Transport: &http.Transport{
-				Proxy: proxyURL(proxyChooser),
-			},
+		client = &http.Client{}
+	}
+
+	if proxyChooser != nil {
+		client.Transport = &http.Transport{
+			Proxy: proxyURL(proxyChooser),
 		}
 	}
 
-	return &Crawler{
-		client:           *client,
-		proxyChooser:     proxyChooser,
-		userAgentChooser: userAgentChooser,
-	}
+	return &crawler
 }
 
 func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, error) {

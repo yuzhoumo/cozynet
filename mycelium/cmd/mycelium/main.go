@@ -43,6 +43,9 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		fmt.Printf("Requesting %s\n", urls[i].String())
-		req.GetPageContent(ctx, urls[i])
+		_, err := req.GetPageContent(ctx, urls[i])
+		if err != nil {
+			panic(err)
+		}
 	}
 }

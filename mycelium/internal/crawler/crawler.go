@@ -19,14 +19,24 @@ type StringChooser interface {
 
 type Crawler struct {
 	client           http.Client
-    proxyChooser     StringChooser
+	proxyChooser     StringChooser
 	userAgentChooser StringChooser
 }
 
-func NewCrawler(client *http.Client, proxyChooser StringChooser, userAgentChooser StringChooser) *Crawler {
+func NewCrawler(optClient *http.Client, proxyChooser StringChooser, userAgentChooser StringChooser) *Crawler {
+	client := optClient
+
+	if client == nil {
+		client = &http.Client{
+			Transport: &http.Transport{
+				Proxy: proxyURL(proxyChooser),
+			},
+		}
+	}
+
 	return &Crawler{
-		client: *client,
-        proxyChooser: proxyChooser,
+		client:           *client,
+		proxyChooser:     proxyChooser,
 		userAgentChooser: userAgentChooser,
 	}
 }
@@ -62,6 +72,12 @@ func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, er
 	return nil, nil
 }
 
+func proxyURL(proxyChooser StringChooser) func(*http.Request) (*url.URL, error) {
+	return func(req *http.Request) (*url.URL, error) {
+		return url.Parse(proxyChooser.Pick())
+	}
+}
+
 func parseHtml(r io.Reader) {
 	tokenizer := html.NewTokenizer(r)
 	for tokenizer.Err() == nil {
@@ -80,7 +96,6 @@ func parseHtml(r io.Reader) {
 func parsePlaintext(r io.Reader) {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanWords)
-
 	for scanner.Scan() {
 		fmt.Println(scanner.Text())
 	}

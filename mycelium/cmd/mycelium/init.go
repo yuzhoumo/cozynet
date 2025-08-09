@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
-    "flag"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -50,11 +50,11 @@ func initSeedUrls(path string) ([]*url.URL, error) {
 }
 
 func initProxyChooser(path string) (*chooser.ProxyChooser, error) {
-    options, err := chooser.LoadProxyOptions(path)
-    if err != nil {
-        return nil, fmt.Errorf("failed to load proxy file %s: %w", path, err)
-    }
-    return chooser.NewProxyChooser(options), nil
+	options, err := chooser.LoadProxyOptions(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load proxy file %s: %w", path, err)
+	}
+	return chooser.NewProxyChooser(options), nil
 }
 
 func initUserAgentChooser(path string) (*chooser.UserAgentChooser, error) {

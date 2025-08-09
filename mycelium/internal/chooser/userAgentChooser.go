@@ -1,9 +1,9 @@
 package chooser
 
 import (
-    "encoding/json"
-    "fmt"
-    "os"
+	"encoding/json"
+	"fmt"
+	"os"
 
 	"github.com/mroth/weightedrand/v2"
 )
@@ -14,7 +14,7 @@ type UserAgentOption struct {
 }
 
 func (uao *UserAgentOption) String() string {
-    return uao.UserAgent
+	return uao.UserAgent
 }
 
 type UserAgentChooser struct {
@@ -27,12 +27,12 @@ func NewUserAgentChooser(options []UserAgentOption) (*UserAgentChooser, error) {
 		choices = append(choices, weightedrand.NewChoice(opt.UserAgent, opt.Percent))
 	}
 
-    chooser, err := weightedrand.NewChooser(choices...)
-    if err != nil {
-        return nil, err
-    }
+	chooser, err := weightedrand.NewChooser(choices...)
+	if err != nil {
+		return nil, err
+	}
 
-	return &UserAgentChooser{ weightedRandomChooser: chooser }, nil
+	return &UserAgentChooser{weightedRandomChooser: chooser}, nil
 }
 
 func LoadUserAgentOptions(path string) ([]UserAgentOption, error) {

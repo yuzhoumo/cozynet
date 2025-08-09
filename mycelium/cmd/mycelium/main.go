@@ -3,36 +3,35 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"mycelium/internal/crawler"
 )
 
 type MyceliumConfig struct {
-	seedFilePath string
+	seedFilePath   string
 	agentsFilePath string
-	proxyFilePath string
+	proxyFilePath  string
 }
 
 type Mycelium struct {
-    config MyceliumConfig
+	config MyceliumConfig
 }
 
 func main() {
-    var app Mycelium
+	var app Mycelium
 
-    conf := app.config
-    initCliFlags(&conf)
+	conf := app.config
+	initCliFlags(&conf)
 
 	urls, err := initSeedUrls(conf.seedFilePath)
 	if err != nil {
 		panic(err)
 	}
 
-    proxyChooser, err := initProxyChooser(conf.proxyFilePath)
-    if err != nil {
-        panic(err)
-    }
+	proxyChooser, err := initProxyChooser(conf.proxyFilePath)
+	if err != nil {
+		panic(err)
+	}
 
 	userAgentChooser, err := initUserAgentChooser(conf.agentsFilePath)
 	if err != nil {
@@ -40,7 +39,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	req := crawler.NewCrawler(&http.Client{}, proxyChooser, userAgentChooser)
+	req := crawler.NewCrawler(nil, proxyChooser, userAgentChooser)
 
 	for i := 0; i < 10; i++ {
 		fmt.Printf("Requesting %s\n", urls[i].String())

@@ -1,6 +1,10 @@
 package chooser
 
-import "fmt"
+import (
+    "encoding/json"
+    "fmt"
+    "os"
+)
 
 type ProxyOption struct {
 	Username string `json:"user"`
@@ -9,7 +13,10 @@ type ProxyOption struct {
 }
 
 func (po *ProxyOption) String() string {
-	return fmt.Sprintf("%s", "") //TODO: implement
+    if po.Username != "" && po.Password != "" {
+        return fmt.Sprintf("http://%s:%s@%s", po.Username, po.Password, po.URL)
+    }
+	return fmt.Sprintf("http://%s", po.URL)
 }
 
 type ProxyChooser struct {
@@ -25,8 +32,19 @@ func NewProxyChooser(options []ProxyOption) *ProxyChooser {
 }
 
 func LoadProxyOptions(path string) ([]ProxyOption, error) {
-	// TODO: implement
-	return nil, nil
+	var options []ProxyOption
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load %s: %w", path, err)
+	}
+
+	err = json.Unmarshal(content, &options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal %s: %w", path, err)
+	}
+
+	return options, nil
 }
 
 func (pc *ProxyChooser) Pick() string {

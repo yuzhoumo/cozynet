@@ -27,14 +27,18 @@ func NewCrawler(client *http.Client, proxyChooser StringChooser, userAgentChoose
 
 	crawler.client = client
 
-	if client == nil {
-		client = &http.Client{}
+	if crawler.client == nil {
+		crawler.client = &http.Client{}
 	}
 
 	if proxyChooser != nil {
-		client.Transport = &http.Transport{
+		crawler.client.Transport = &http.Transport{
 			Proxy: proxyURL(proxyChooser),
 		}
+	}
+
+	if userAgentChooser != nil {
+		crawler.userAgentChooser = userAgentChooser
 	}
 
 	return &crawler

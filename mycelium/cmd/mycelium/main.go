@@ -39,11 +39,11 @@ func main() {
 	}
 
 	ctx := context.Background()
-	req := crawler.NewCrawler(nil, proxyChooser, userAgentChooser)
+	crawl := crawler.NewCrawler(nil, proxyChooser, userAgentChooser)
 
 	for i := 0; i < 10; i++ {
 		fmt.Printf("Requesting %s\n", urls[i].String())
-		_, err := req.GetPageContent(ctx, urls[i])
+		_, err := crawl.GetPageContent(ctx, urls[i])
 		if err != nil {
 			panic(err)
 		}

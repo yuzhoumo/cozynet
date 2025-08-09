@@ -50,7 +50,10 @@ func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, er
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	userAgent := r.userAgentChooser.Pick()
+	userAgent := defaultUserAgent
+	if r.userAgentChooser != nil {
+		userAgent = r.userAgentChooser.Pick()
+	}
 	req.Header.Set(userAgentCanonicalHeader, userAgent)
 
 	fmt.Printf("set user agent: %s\n", userAgent)

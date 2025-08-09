@@ -1,22 +1,18 @@
 package chooser
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
+	"net/url"
 	"os"
 )
 
 type ProxyOption struct {
-	Username string `json:"user"`
-	Password string `json:"pass"`
-	URL      string `json:"url"`
+	URL url.URL
 }
 
 func (po *ProxyOption) String() string {
-	if po.Username != "" && po.Password != "" {
-		return fmt.Sprintf("http://%s:%s@%s", po.Username, po.Password, po.URL)
-	}
-	return fmt.Sprintf("http://%s", po.URL)
+	return po.URL.String()
 }
 
 type ProxyChooser struct {
@@ -32,16 +28,26 @@ func NewProxyChooser(options []ProxyOption) *ProxyChooser {
 }
 
 func LoadProxyOptions(path string) ([]ProxyOption, error) {
-	var options []ProxyOption
-
-	content, err := os.ReadFile(path)
+	proxyfile, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", path, err)
+		return nil, fmt.Errorf("failed to open proxy file %s: %w", path, err)
 	}
+	defer proxyfile.Close()
 
-	err = json.Unmarshal(content, &options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %w", path, err)
+	var options []ProxyOption
+	scanner := bufio.NewScanner(proxyfile)
+	line := 1
+
+	for scanner.Scan() {
+		rawUrl := scanner.Text()
+		parsedUrl, err := url.Parse(rawUrl)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse proxy file line %d: %s", line, rawUrl)
+		}
+
+		options = append(options, ProxyOption{URL: *parsedUrl})
+		line++
 	}
 
 	return options, nil

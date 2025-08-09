@@ -20,28 +20,46 @@ type StringChooser interface {
 type Crawler struct {
 	client           *http.Client
 	userAgentChooser StringChooser
+	proxyChooser     StringChooser
 }
 
-func NewCrawler(client *http.Client, proxyChooser StringChooser, userAgentChooser StringChooser) *Crawler {
-	var crawler Crawler
+type CrawlerOption func(*Crawler)
 
-	crawler.client = client
-
-	if crawler.client == nil {
-		crawler.client = &http.Client{}
+func NewCrawler(opt ...CrawlerOption) *Crawler {
+	c := new(Crawler)
+	for _, o := range opt {
+		o(c)
 	}
 
-	if proxyChooser != nil {
-		crawler.client.Transport = &http.Transport{
-			Proxy: proxyURL(proxyChooser),
+	if c.client == nil {
+		c.client = &http.Client{}
+	}
+
+	if c.proxyChooser != nil {
+		c.client.Transport = &http.Transport{
+			Proxy: proxyURL(c.proxyChooser),
 		}
 	}
 
-	if userAgentChooser != nil {
-		crawler.userAgentChooser = userAgentChooser
-	}
+	return c
+}
 
-	return &crawler
+func WithHttpClient(client *http.Client) CrawlerOption {
+	return func(c *Crawler) {
+		c.client = client
+	}
+}
+
+func WithProxyChooser(proxyChooser StringChooser) CrawlerOption {
+	return func(c *Crawler) {
+		c.proxyChooser = proxyChooser
+	}
+}
+
+func WithUserAgentChooser(userAgentChooser StringChooser) CrawlerOption {
+	return func(c *Crawler) {
+		c.userAgentChooser = userAgentChooser
+	}
 }
 
 func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, error) {

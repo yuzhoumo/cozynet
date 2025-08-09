@@ -12,9 +12,9 @@ import (
 )
 
 func initCliFlags(conf *MyceliumConfig) {
-	flag.StringVar(&conf.seedFilePath, "seedfile", "./seed.txt", "newline delimited list of seed urls")
-	flag.StringVar(&conf.agentsFilePath, "agentsfile", "./agents.json", "user agents json")
-	flag.StringVar(&conf.proxyFilePath, "proxyfile", "./proxies.json", "proxy list json")
+	flag.StringVar(&conf.seedFilePath, "seedfile", "", "newline delimited list of seed urls")
+	flag.StringVar(&conf.agentsFilePath, "agentsfile", "", "user agents json")
+	flag.StringVar(&conf.proxyFilePath, "proxyfile", "", "proxy list json")
 	flag.Parse()
 }
 
@@ -50,6 +50,9 @@ func initSeedUrls(path string) ([]*url.URL, error) {
 }
 
 func initProxyChooser(path string) (*chooser.ProxyChooser, error) {
+	if path == "" {
+		return nil, nil
+	}
 	options, err := chooser.LoadProxyOptions(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load proxy file %s: %w", path, err)
@@ -58,6 +61,9 @@ func initProxyChooser(path string) (*chooser.ProxyChooser, error) {
 }
 
 func initUserAgentChooser(path string) (*chooser.UserAgentChooser, error) {
+	if path == "" {
+		return nil, nil
+	}
 	userAgentOptions, err := chooser.LoadUserAgentOptions(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load agent file %s: %w", path, err)

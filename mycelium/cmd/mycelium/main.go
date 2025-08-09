@@ -28,18 +28,24 @@ func main() {
 		panic(err)
 	}
 
+	var options []crawler.CrawlerOption
+
 	proxyChooser, err := initProxyChooser(conf.proxyFilePath)
 	if err != nil {
 		panic(err)
+	} else if proxyChooser != nil {
+		options = append(options, crawler.WithProxyChooser(proxyChooser))
 	}
 
 	userAgentChooser, err := initUserAgentChooser(conf.agentsFilePath)
 	if err != nil {
 		panic(err)
+	} else if userAgentChooser != nil {
+		options = append(options, crawler.WithUserAgentChooser(userAgentChooser))
 	}
 
 	ctx := context.Background()
-	crawl := crawler.NewCrawler(nil, proxyChooser, userAgentChooser)
+	crawl := crawler.NewCrawler(options...)
 
 	for i := 0; i < 10; i++ {
 		fmt.Printf("Requesting %s\n", urls[i].String())

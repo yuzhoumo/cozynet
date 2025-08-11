@@ -1,17 +1,26 @@
 package crawler
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+type QueueItem interface {
+    GetLocation() string
+    GetRetries()  int32
+    ProtoReflect() protoreflect.Message
+}
+
+type Queue interface {
+    Enqueue(context.Context, QueueItem) error
+    Pop(context.Context) (QueueItem, error)
+    Size(context.Context) (int32, error)
+}
 
 type StringChooser interface {
 	Pick() string
@@ -21,11 +30,12 @@ type Crawler struct {
 	client           *http.Client
 	userAgentChooser StringChooser
 	proxyChooser     StringChooser
+    queue            Queue
 }
 
 type CrawlerOption func(*Crawler)
 
-func NewCrawler(opt ...CrawlerOption) *Crawler {
+func NewCrawler(queue Queue, opt ...CrawlerOption) *Crawler {
 	c := new(Crawler)
 	for _, o := range opt {
 		o(c)
@@ -40,6 +50,8 @@ func NewCrawler(opt ...CrawlerOption) *Crawler {
 			Proxy: proxyURL(c.proxyChooser),
 		}
 	}
+
+    c.queue = queue
 
 	return c
 }
@@ -62,8 +74,8 @@ func WithUserAgentChooser(userAgentChooser StringChooser) CrawlerOption {
 	}
 }
 
-func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+func (r *Crawler) GetPageContent(ctx context.Context, loc *url.URL) (*string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, loc.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -78,19 +90,22 @@ func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, er
 
 	res, err := r.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to request %s: %w", url.String(), err)
+		return nil, fmt.Errorf("failed to request %s: %w", loc.String(), err)
 	}
 	defer res.Body.Close()
 
 	contentType := res.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/") {
-		return nil, fmt.Errorf("page content %s was not type 'text', got: %s", url.String(), contentType)
+		return nil, fmt.Errorf("page content %s was not type 'text', got: %s", loc.String(), contentType)
 	}
 
+    page := NewPage(loc)
+
 	if strings.HasPrefix(contentType, "text/html") {
-		parseHtml(res.Body)
+		page.ParseHtmlPage(res.Body)
+        fmt.Println("parsed page", *page)
 	} else {
-		parsePlaintext(res.Body)
+        fmt.Println("TODO: PARSE PLAINTEXT PAGE")
 	}
 
 	return nil, nil
@@ -99,28 +114,5 @@ func (r *Crawler) GetPageContent(ctx context.Context, url *url.URL) (*string, er
 func proxyURL(proxyChooser StringChooser) func(*http.Request) (*url.URL, error) {
 	return func(req *http.Request) (*url.URL, error) {
 		return url.Parse(proxyChooser.Pick())
-	}
-}
-
-func parseHtml(r io.Reader) {
-	tokenizer := html.NewTokenizer(r)
-	for tokenizer.Err() == nil {
-		t := tokenizer.Token()
-		if t.DataAtom == atom.A {
-			for _, a := range t.Attr {
-				if a.Key == "href" {
-					fmt.Println(a.Val)
-				}
-			}
-		}
-		tokenizer.Next()
-	}
-}
-
-func parsePlaintext(r io.Reader) {
-	scanner := bufio.NewScanner(r)
-	scanner.Split(bufio.ScanWords)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
 	}
 }

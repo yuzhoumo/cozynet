@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-    "os"
-    "strconv"
+	"os"
+	"strconv"
 
 	"mycelium/internal/crawler"
 	"mycelium/internal/redisq"
 
-    "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 type MyceliumConfig struct {
@@ -25,10 +25,10 @@ type Mycelium struct {
 func main() {
 	var app Mycelium
 
-    err := godotenv.Load()
-    if err != nil {
-        panic(err)
-    }
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 
 	conf := app.config
 	initCliFlags(&conf)
@@ -54,17 +54,17 @@ func main() {
 		options = append(options, crawler.WithUserAgentChooser(userAgentChooser))
 	}
 
-    redisDb, err := strconv.ParseInt(os.Getenv("REDIS_DB"), 10, 0)
-    if err != nil {
-        panic(err)
-    }
+	redisDb, err := strconv.ParseInt(os.Getenv("REDIS_DB"), 10, 0)
+	if err != nil {
+		panic(err)
+	}
 
 	ctx := context.Background()
-    queue := redisq.NewRedisQueue(&redisq.RedisQueueOptions{
-        Addr: os.Getenv("REDIS_ADDR"),
-        Pass: os.Getenv("REDIS_PASS"),
-        DB: int(redisDb),
-    })
+	queue := redisq.NewRedisQueue(&redisq.RedisQueueOptions{
+		Addr: os.Getenv("REDIS_ADDR"),
+		Pass: os.Getenv("REDIS_PASS"),
+		DB:   int(redisDb),
+	})
 	crawl := crawler.NewCrawler(queue, options...)
 
 	for i := 0; i < 10; i++ {

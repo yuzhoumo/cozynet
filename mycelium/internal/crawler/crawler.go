@@ -11,15 +11,15 @@ import (
 )
 
 type QueueItem interface {
-    GetLocation() string
-    GetRetries()  int32
-    ProtoReflect() protoreflect.Message
+	GetLocation() string
+	GetRetries() int32
+	ProtoReflect() protoreflect.Message
 }
 
 type Queue interface {
-    Enqueue(context.Context, QueueItem) error
-    Pop(context.Context) (QueueItem, error)
-    Size(context.Context) (int32, error)
+	Enqueue(context.Context, QueueItem) error
+	Pop(context.Context) (QueueItem, error)
+	Size(context.Context) (int32, error)
 }
 
 type StringChooser interface {
@@ -30,7 +30,7 @@ type Crawler struct {
 	client           *http.Client
 	userAgentChooser StringChooser
 	proxyChooser     StringChooser
-    queue            Queue
+	queue            Queue
 }
 
 type CrawlerOption func(*Crawler)
@@ -51,7 +51,7 @@ func NewCrawler(queue Queue, opt ...CrawlerOption) *Crawler {
 		}
 	}
 
-    c.queue = queue
+	c.queue = queue
 
 	return c
 }
@@ -99,13 +99,13 @@ func (r *Crawler) GetPageContent(ctx context.Context, loc *url.URL) (*string, er
 		return nil, fmt.Errorf("page content %s was not type 'text', got: %s", loc.String(), contentType)
 	}
 
-    page := NewPage(loc)
+	page := NewPage(loc)
 
 	if strings.HasPrefix(contentType, "text/html") {
 		page.ParseHtmlPage(res.Body)
-        fmt.Println("parsed page", *page)
+		fmt.Println(page.String())
 	} else {
-        fmt.Println("TODO: PARSE PLAINTEXT PAGE")
+		fmt.Println("TODO: PARSE PLAINTEXT PAGE")
 	}
 
 	return nil, nil

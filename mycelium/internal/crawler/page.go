@@ -145,7 +145,10 @@ func (p *Page) parseHtmlTextToken(token *html.Token, tag atom.Atom) {
 		p.parseHtmlTitle(token)
 	case atom.Script:
 		p.parseHtmlScriptContent(token)
-	case atom.P:
+	case atom.P, atom.Span, atom.Pre, atom.Code,
+		atom.Em, atom.Strong, atom.B, atom.I, atom.Mark, atom.Small,
+		atom.Abbr, atom.Cite, atom.Q, atom.Blockquote, atom.Kbd, atom.Samp,
+		atom.Var, atom.Li, atom.Dt, atom.Dd, atom.Th, atom.Td, atom.Caption:
 		p.parseContent(token)
 	}
 }
@@ -158,11 +161,17 @@ func (p *Page) parseContent(t *html.Token) {
 }
 
 func (p *Page) parseHtmlTitle(t *html.Token) {
-	p.Title = t.Data
+	trimmed := strings.TrimSpace(t.Data)
+	if trimmed != "" {
+		p.Title = trimmed
+	}
 }
 
 func (p *Page) parseHtmlHeadings(t *html.Token) {
-	p.Headings = append(p.Headings, strings.TrimSpace(t.Data))
+	trimmed := strings.TrimSpace(t.Data)
+	if trimmed != "" {
+		p.Headings = append(p.Headings, trimmed)
+	}
 }
 
 func (p *Page) parseHtmlLink(t *html.Token) {
@@ -187,10 +196,14 @@ func (p *Page) parseHtmlMeta(t *html.Token) {
 	for _, a := range t.Attr {
 		switch a.Key {
 		case "name":
-			name = a.Val
+			name = strings.TrimSpace(a.Val)
 		case "content":
-			content = a.Val
+			content = strings.TrimSpace(a.Val)
 		}
+	}
+
+	if content == "" {
+		return
 	}
 
 	switch name {
@@ -204,9 +217,9 @@ func (p *Page) parseHtmlMeta(t *html.Token) {
 }
 
 func (p *Page) parseHtmlScriptContent(t *html.Token) {
-	trimmedData := strings.TrimSpace(t.Data)
-	if trimmedData != "" {
-		p.ScriptContent = append(p.ScriptContent, trimmedData)
+	trimmed := strings.TrimSpace(t.Data)
+	if trimmed != "" {
+		p.ScriptContent = append(p.ScriptContent, trimmed)
 	}
 }
 

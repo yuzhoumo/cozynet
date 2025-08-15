@@ -74,7 +74,7 @@ func WithUserAgentChooser(userAgentChooser StringChooser) CrawlerOption {
 	}
 }
 
-func (r *Crawler) GetPageContent(ctx context.Context, loc *url.URL) (*string, error) {
+func (r *Crawler) GetPage(ctx context.Context, loc *url.URL) (*Page, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, loc.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -108,7 +108,7 @@ func (r *Crawler) GetPageContent(ctx context.Context, loc *url.URL) (*string, er
 		fmt.Println("TODO: PARSE PLAINTEXT PAGE")
 	}
 
-	return nil, nil
+	return page, nil
 }
 
 func proxyURL(proxyChooser StringChooser) func(*http.Request) (*url.URL, error) {

@@ -1,10 +1,12 @@
 package crawler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -25,6 +27,42 @@ type Page struct {
 
 func NewPage(loc *url.URL) *Page {
 	return &Page{Location: loc}
+}
+
+func urlsToStrings(urls []url.URL) []string {
+	var res []string
+	for _, u := range urls {
+		res = append(res, u.String())
+	}
+	return res
+}
+
+func (p *Page) MarshalJson() ([]byte, error) {
+	return json.Marshal(struct {
+		Title         string   `json:"title"`
+		Description   string   `json:"description"`
+		Author        string   `json:"author"`
+		Keywords      []string `json:"keywords"`
+		Headings      []string `json:"headings"`
+		Content       []string `json:"content"`
+		Links         []string `json:"links"`
+		ScriptLinks   []string `json:"script_links"`
+		ScriptContent []string `json:"script_content"`
+		Location      string   `json:"location"`
+		CreatedAt     int64    `json:"created_at"`
+	}{
+		Title:         p.Title,
+		Description:   p.Description,
+		Author:        p.Author,
+		Keywords:      p.Keywords,
+		Headings:      p.Headings,
+		Content:       p.Content,
+		Links:         urlsToStrings(p.Links),
+		ScriptLinks:   urlsToStrings(p.ScriptLinks),
+		ScriptContent: p.ScriptContent,
+		Location:      p.Location.String(),
+		CreatedAt:     time.Now().UnixMilli(),
+	})
 }
 
 func (p *Page) String() string {

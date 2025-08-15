@@ -9,6 +9,7 @@ import (
 	"mycelium/internal/crawler"
 	"mycelium/internal/redisq"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
 
@@ -69,9 +70,19 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		fmt.Printf("Requesting %s\n", urls[i].String())
-		_, err := crawl.GetPageContent(ctx, urls[i])
+		page, err := crawl.GetPage(ctx, urls[i])
 		if err != nil {
 			panic(err)
 		}
+
+		data, err := page.MarshalJson()
+		if err != nil {
+			panic(err)
+		}
+
+		if err := os.WriteFile("./out/"+uuid.New().String()+".json", data, 0644); err != nil {
+			panic(err)
+		}
+
 	}
 }

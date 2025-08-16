@@ -84,19 +84,4 @@ func main() {
 	ctx := context.Background()
 	crawl := crawler.NewCrawler(queue, visited, options...)
 	crawl.Crawl(ctx, seed, func(u *url.URL) crawler.QueueItem { return redis.NewQueueItem(u) })
-
-	// fmt.Printf("Requesting %s\n", urls[i].String())
-	// page, err := crawl.GetPage(ctx, urls[i])
-	// if err != nil {
-	//     panic(err)
-	// }
-
-	// data, err := page.MarshalJson()
-	// if err != nil {
-	//     panic(err)
-	// }
-
-	// if err := os.WriteFile("./out/"+uuid.New().String()+".json", data, 0644); err != nil {
-	//     panic(err)
-	// }
 }

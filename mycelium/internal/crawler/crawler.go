@@ -11,12 +11,12 @@ import (
 )
 
 type StoreItem interface {
-    Marshal() ([]byte, error)
+	Marshal() ([]byte, error)
 }
 
 type Store interface {
-    Store(StoreItem) (id string, err error)
-    Retrieve(id string) (data []byte, err error)
+	Store(item StoreItem, extension string) (id string, err error)
+	Retrieve(id string, extension string) (data []byte, err error)
 }
 
 type QueueItem interface {
@@ -48,7 +48,7 @@ type Crawler struct {
 	proxyChooser     StringChooser
 	queue            Queue
 	visited          Visited
-    store            Store
+	store            Store
 }
 
 type CrawlerOption func(*Crawler)
@@ -71,7 +71,7 @@ func NewCrawler(queue Queue, visited Visited, store Store, opt ...CrawlerOption)
 
 	c.queue = queue
 	c.visited = visited
-    c.store = store
+	c.store = store
 
 	return c
 }
@@ -160,10 +160,10 @@ func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueI
 			continue
 		}
 
-        _, err = c.store.Store(page) // TODO: record page id in db
-        if err != nil {
-            fmt.Printf("failed to store page: %s\n", err.Error())
-        }
+		_, err = c.store.Store(page, ".json") // TODO: record page id in db
+		if err != nil {
+			fmt.Printf("failed to store page: %s\n", err.Error())
+		}
 
 		for _, neighbor := range page.Links {
 			c.queue.Enqueue(ctx, makeQueueItem(&neighbor))

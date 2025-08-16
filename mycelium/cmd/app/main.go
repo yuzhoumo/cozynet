@@ -82,7 +82,7 @@ func main() {
 		seed = append(seed, redis.NewQueueItem(seedUrl))
 	}
 
-    filestore := store.NewFileStore(os.Getenv("FILESTORE_OUT_DIR"))
+	filestore := store.NewFileStore(os.Getenv("FILESTORE_OUT_DIR"))
 
 	ctx := context.Background()
 	crawl := crawler.NewCrawler(queue, visited, filestore, options...)

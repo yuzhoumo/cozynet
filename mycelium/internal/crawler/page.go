@@ -122,7 +122,8 @@ func (p *Page) String() string {
 }
 
 func (p *Page) NormalizePageURL(loc string) (*url.URL, error) {
-	parsedUrl, err := url.Parse(loc)
+    trimmed := strings.TrimSpace(loc)
+	parsedUrl, err := url.Parse(trimmed)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}

@@ -60,6 +60,7 @@ func NewCrawler(queue Queue, visited Visited, opt ...CrawlerOption) *Crawler {
 	}
 
 	c.queue = queue
+	c.visited = visited
 
 	return c
 }

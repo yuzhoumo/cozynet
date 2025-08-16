@@ -59,7 +59,6 @@ func main() {
 		panic(err)
 	}
 
-	ctx := context.Background()
 	queue := redis.NewRedisQueue(&redis.RedisQueueOptions{
 		Addr: os.Getenv("REDIS_ADDR"),
 		Pass: os.Getenv("REDIS_PASS"),
@@ -82,6 +81,7 @@ func main() {
 		seed = append(seed, redis.NewQueueItem(seedUrl))
 	}
 
+	ctx := context.Background()
 	crawl := crawler.NewCrawler(queue, visited, options...)
 	crawl.Crawl(ctx, seed, func(u *url.URL) crawler.QueueItem { return redis.NewQueueItem(u) })
 

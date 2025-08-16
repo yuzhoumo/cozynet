@@ -37,7 +37,7 @@ func urlsToStrings(urls []url.URL) []string {
 	return res
 }
 
-func (p *Page) MarshalJson() ([]byte, error) {
+func (p *Page) Marshal() ([]byte, error) {
 	return json.Marshal(struct {
 		Title         string   `json:"title"`
 		Description   string   `json:"description"`

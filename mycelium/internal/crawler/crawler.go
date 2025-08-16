@@ -10,10 +10,19 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+type StoreItem interface {
+    Marshal() ([]byte, error)
+}
+
+type Store interface {
+    Store(StoreItem) (id string, err error)
+    Retrieve(id string) (data []byte, err error)
+}
+
 type QueueItem interface {
 	GetLocation() string
 	GetRetries() int32
-	SetRetries(int32)
+	SetRetries(retries int32)
 	ProtoReflect() protoreflect.Message
 }
 
@@ -39,11 +48,12 @@ type Crawler struct {
 	proxyChooser     StringChooser
 	queue            Queue
 	visited          Visited
+    store            Store
 }
 
 type CrawlerOption func(*Crawler)
 
-func NewCrawler(queue Queue, visited Visited, opt ...CrawlerOption) *Crawler {
+func NewCrawler(queue Queue, visited Visited, store Store, opt ...CrawlerOption) *Crawler {
 	c := new(Crawler)
 	for _, o := range opt {
 		o(c)
@@ -61,6 +71,7 @@ func NewCrawler(queue Queue, visited Visited, opt ...CrawlerOption) *Crawler {
 
 	c.queue = queue
 	c.visited = visited
+    c.store = store
 
 	return c
 }
@@ -122,7 +133,7 @@ func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueI
 
 		isVisited, err := c.visited.IsVisited(ctx, curr)
 		if err != nil {
-			fmt.Printf("failed to check if %v is visited: %s", curr, err.Error())
+			fmt.Printf("failed to check if %v is visited: %s\n", curr, err.Error())
 			curr.SetRetries(curr.GetRetries() + 1)
 			c.queue.Enqueue(ctx, curr)
 			continue
@@ -145,9 +156,14 @@ func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueI
 
 		page, err := c.GetPage(ctx, parsedUrl)
 		if err != nil {
-			fmt.Printf("failed to get page %s: %s", curr.GetLocation(), err.Error())
+			fmt.Printf("failed to get page %s: %s\n", curr.GetLocation(), err.Error())
 			continue
 		}
+
+        _, err = c.store.Store(page) // TODO: record page id in db
+        if err != nil {
+            fmt.Printf("failed to store page: %s\n", err.Error())
+        }
 
 		for _, neighbor := range page.Links {
 			c.queue.Enqueue(ctx, makeQueueItem(&neighbor))

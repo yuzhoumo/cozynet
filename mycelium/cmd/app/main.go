@@ -8,6 +8,7 @@ import (
 
 	"mycelium/internal/crawler"
 	"mycelium/internal/redis"
+	"mycelium/internal/store"
 
 	"github.com/joho/godotenv"
 )
@@ -81,8 +82,10 @@ func main() {
 		seed = append(seed, redis.NewQueueItem(seedUrl))
 	}
 
+    filestore := store.NewFileStore(os.Getenv("FILESTORE_OUT_DIR"))
+
 	ctx := context.Background()
-	crawl := crawler.NewCrawler(queue, visited, options...)
+	crawl := crawler.NewCrawler(queue, visited, filestore, options...)
 	err = crawl.Seed(ctx, seed)
 	if err != nil {
 		panic(err)

@@ -122,7 +122,7 @@ func (p *Page) String() string {
 }
 
 func (p *Page) NormalizePageURL(loc string) (*url.URL, error) {
-    trimmed := strings.TrimSpace(loc)
+	trimmed := strings.TrimSpace(loc)
 	parsedUrl, err := url.Parse(trimmed)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
@@ -222,6 +222,7 @@ func (p *Page) parseHtmlLink(t *html.Token) {
 		normalizedUrl, err := p.NormalizePageURL(a.Val)
 		if err != nil {
 			fmt.Printf("error normalizing url: %v", err)
+			continue
 		}
 
 		p.Links = append(p.Links, *normalizedUrl)

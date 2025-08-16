@@ -83,11 +83,28 @@ func WithUserAgentChooser(userAgentChooser StringChooser) CrawlerOption {
 	}
 }
 
-func (c *Crawler) Crawl(ctx context.Context, seed []QueueItem, makeQueueItem func(*url.URL) QueueItem) error {
-	for _, item := range seed {
-		c.queue.Enqueue(ctx, item)
+func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
+	size, err := c.queue.Size(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get queue size: %w", err)
 	}
 
+	if size > 0 {
+		fmt.Printf("Queue is non-empty length %d, skipping seed stage", size)
+		return nil
+	}
+
+	for _, item := range seed {
+		err := c.queue.Enqueue(ctx, item)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueItem) error {
 	size, err := c.queue.Size(ctx)
 	if err != nil {
 		return err

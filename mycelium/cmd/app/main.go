@@ -83,5 +83,13 @@ func main() {
 
 	ctx := context.Background()
 	crawl := crawler.NewCrawler(queue, visited, options...)
-	crawl.Crawl(ctx, seed, func(u *url.URL) crawler.QueueItem { return redis.NewQueueItem(u) })
+	err = crawl.Seed(ctx, seed)
+	if err != nil {
+		panic(err)
+	}
+
+	err = crawl.Crawl(ctx, func(u *url.URL) crawler.QueueItem { return redis.NewQueueItem(u) })
+	if err != nil {
+		panic(err)
+	}
 }

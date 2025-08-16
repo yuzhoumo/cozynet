@@ -270,6 +270,7 @@ func (p *Page) parseHtmlScriptAttributes(t *html.Token) {
 		normalizedUrl, err := p.NormalizePageURL(a.Val)
 		if err != nil {
 			fmt.Printf("error normalizing url: %v", err)
+			continue
 		}
 
 		p.ScriptLinks = append(p.ScriptLinks, *normalizedUrl)

@@ -13,7 +13,14 @@ import (
 type QueueItem interface {
 	GetLocation() string
 	GetRetries() int32
+	SetRetries(int32)
 	ProtoReflect() protoreflect.Message
+}
+
+type Visited interface {
+	Visit(context.Context, QueueItem) error
+	IsVisited(context.Context, QueueItem) (bool, error)
+	Reset(context.Context) error
 }
 
 type Queue interface {
@@ -31,11 +38,12 @@ type Crawler struct {
 	userAgentChooser StringChooser
 	proxyChooser     StringChooser
 	queue            Queue
+	visited          Visited
 }
 
 type CrawlerOption func(*Crawler)
 
-func NewCrawler(queue Queue, opt ...CrawlerOption) *Crawler {
+func NewCrawler(queue Queue, visited Visited, opt ...CrawlerOption) *Crawler {
 	c := new(Crawler)
 	for _, o := range opt {
 		o(c)
@@ -72,6 +80,63 @@ func WithUserAgentChooser(userAgentChooser StringChooser) CrawlerOption {
 	return func(c *Crawler) {
 		c.userAgentChooser = userAgentChooser
 	}
+}
+
+func (c *Crawler) Crawl(ctx context.Context, seed []QueueItem, makeQueueItem func(*url.URL) QueueItem) error {
+	for _, item := range seed {
+		c.queue.Enqueue(ctx, item)
+	}
+
+	size, err := c.queue.Size(ctx)
+	if err != nil {
+		return err
+	}
+
+	for size > 0 {
+		curr, err := c.queue.Pop(ctx)
+		if err != nil {
+			return err
+		}
+
+		if curr.GetRetries() > maxRetries {
+			continue
+		}
+
+		isVisited, err := c.visited.IsVisited(ctx, curr)
+		if err != nil {
+			fmt.Printf("failed to check if %v is visited: %s", curr, err.Error())
+			curr.SetRetries(curr.GetRetries() + 1)
+			c.queue.Enqueue(ctx, curr)
+			continue
+		} else if isVisited {
+			continue
+		} else {
+			c.visited.Visit(ctx, curr)
+		}
+
+		size, err = c.queue.Size(ctx)
+		if err != nil {
+			return err
+		}
+
+		parsedUrl, err := url.Parse(curr.GetLocation())
+		if err != nil {
+			fmt.Printf("malformed url: %s", curr.GetLocation())
+			continue
+		}
+
+		page, err := c.GetPage(ctx, parsedUrl)
+		if err != nil {
+			fmt.Printf("failed to get page %s: %s", curr.GetLocation(), err.Error())
+			continue
+		}
+
+		for _, neighbor := range page.Links {
+			c.queue.Enqueue(ctx, makeQueueItem(&neighbor))
+		}
+	}
+
+	return nil
 }
 
 func (r *Crawler) GetPage(ctx context.Context, loc *url.URL) (*Page, error) {

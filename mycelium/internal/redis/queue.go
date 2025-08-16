@@ -1,4 +1,4 @@
-package redisq
+package redis
 
 import (
 	"context"

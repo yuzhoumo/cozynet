@@ -90,7 +90,7 @@ func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
 	}
 
 	if size > 0 {
-		fmt.Printf("Queue is non-empty length %d, skipping seed stage", size)
+		fmt.Printf("Queue is non-empty length %d, skipping seed stage\n", size)
 		return nil
 	}
 
@@ -169,8 +169,6 @@ func (r *Crawler) GetPage(ctx context.Context, loc *url.URL) (*Page, error) {
 	}
 	req.Header.Set(userAgentCanonicalHeader, userAgent)
 
-	fmt.Printf("set user agent: %s\n", userAgent)
-
 	res, err := r.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request %s: %w", loc.String(), err)
@@ -186,7 +184,7 @@ func (r *Crawler) GetPage(ctx context.Context, loc *url.URL) (*Page, error) {
 
 	if strings.HasPrefix(contentType, "text/html") {
 		page.ParseHtmlPage(res.Body)
-		fmt.Println(page.String())
+		fmt.Printf("[%s] %d outlinks\n", page.Location, len(page.Links))
 	} else {
 		fmt.Println("TODO: PARSE PLAINTEXT PAGE")
 	}

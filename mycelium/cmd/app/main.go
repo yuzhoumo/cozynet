@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
-
 	"mycelium/internal/crawler"
 	"mycelium/internal/redis"
 	"mycelium/internal/store"
@@ -21,31 +19,31 @@ func main() {
 	}
 
 	// create redis cache
-	cache, err := redis.NewRedisCache(ctx, &redis.RedisCacheOptions{
+	redisCacheOptions := redis.RedisCacheOptions{
 		Addr: env.RedisAddr,
 		Pass: env.RedisPass,
 		DB:   env.RedisDB,
-	})
-	if err != nil {
-		panic(err)
 	}
-	app.cache = *cache
+	if cache, err := redis.NewRedisCache(ctx, &redisCacheOptions); err != nil {
+		panic(err)
+	} else {
+		app.cache = *cache
+	}
 
-	// create crawler
-	var options []crawler.CrawlerOption
-	proxyChooser, err := initProxyChooser(app.config.proxyFilePath)
-	if err != nil {
+	// create crawler options
+	options := []crawler.CrawlerOption{}
+	if proxyChooser, err := initProxyChooser(app.config.proxyFile); err != nil {
 		panic(err)
 	} else if proxyChooser != nil {
 		options = append(options, crawler.WithProxyChooser(proxyChooser))
 	}
-	userAgentChooser, err := initUserAgentChooser(app.config.agentsFilePath)
-	if err != nil {
+	if uaChooser, err := initUserAgentChooser(app.config.agentsFile); err != nil {
 		panic(err)
-	} else if userAgentChooser != nil {
-		options = append(options, crawler.WithUserAgentChooser(userAgentChooser))
+	} else if uaChooser != nil {
+		options = append(options, crawler.WithUserAgentChooser(uaChooser))
 	}
-	filestore := store.NewFileStore(os.Getenv("FILESTORE_OUT_DIR"))
+
+	filestore := store.NewFileStore(env.FilestoreOutDir)
 	app.crawler = *crawler.NewCrawler(&app.cache, filestore, options...)
 
 	app.seed(ctx)

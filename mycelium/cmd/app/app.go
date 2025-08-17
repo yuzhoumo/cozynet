@@ -18,10 +18,10 @@ type Environment struct {
 }
 
 type MyceliumConfig struct {
-	seedFilePath   string
-	agentsFilePath string
-	proxyFilePath  string
-	crawlRoutines  int
+	seedFile    string
+	agentsFile  string
+	proxyFile   string
+	numCrawlers int
 }
 
 type Mycelium struct {
@@ -33,7 +33,7 @@ type Mycelium struct {
 func (app *Mycelium) seed(ctx context.Context) {
 	var seed []crawler.QueueItem
 
-	urls, err := initSeedUrls(app.config.seedFilePath)
+	urls, err := initSeedUrls(app.config.seedFile)
 	if err != nil {
 		panic(err)
 	}
@@ -63,8 +63,8 @@ func (app *Mycelium) crawl(ctx context.Context) {
 		}
 	}
 
-	wg.Add(app.config.crawlRoutines)
-	for i := 0; i < app.config.crawlRoutines; i++ {
+	wg.Add(app.config.numCrawlers)
+	for i := 0; i < app.config.numCrawlers; i++ {
 		go crawlRoutine(&wg, i)
 	}
 

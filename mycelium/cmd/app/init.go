@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 
+	"github.com/joho/godotenv"
 	"mycelium/internal/chooser"
 )
 
@@ -17,6 +19,25 @@ func initCliFlags(conf *MyceliumConfig) {
 	flag.StringVar(&conf.proxyFilePath, "proxyfile", "", "proxy list json")
 	flag.IntVar(&conf.crawlRoutines, "routines", 1, "number of crawler routines to spawn")
 	flag.Parse()
+}
+
+func initEnvironment(env *Environment) error {
+	err := godotenv.Load()
+	if err != nil {
+		return err
+	}
+
+	redisDB, err := strconv.ParseInt(os.Getenv("REDIS_DB"), 10, 0)
+	if err != nil {
+		return err
+	}
+
+	env.RedisAddr = os.Getenv("REDIS_ADDR")
+	env.RedisDB = int(redisDB)
+	env.RedisPass = os.Getenv("REDIS_PASS")
+	env.FilestoreOutDir = os.Getenv("FILESTORE_OUT_DIR")
+
+	return nil
 }
 
 func initSeedUrls(path string) ([]*url.URL, error) {

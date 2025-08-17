@@ -26,16 +26,12 @@ type QueueItem interface {
 	ProtoReflect() protoreflect.Message
 }
 
-type Visited interface {
+type CrawlerCache interface {
+	QueuePush(context.Context, QueueItem) error
+	QueuePop(context.Context) (QueueItem, error)
+	QueueSize(context.Context) (int32, error)
 	Visit(context.Context, QueueItem) error
 	IsVisited(context.Context, QueueItem) (bool, error)
-	Reset(context.Context) error
-}
-
-type Queue interface {
-	Enqueue(context.Context, QueueItem) error
-	Pop(context.Context) (QueueItem, error)
-	Size(context.Context) (int32, error)
 }
 
 type StringChooser interface {
@@ -46,14 +42,13 @@ type Crawler struct {
 	client           *http.Client
 	userAgentChooser StringChooser
 	proxyChooser     StringChooser
-	queue            Queue
-	visited          Visited
+	cache            CrawlerCache
 	store            Store
 }
 
 type CrawlerOption func(*Crawler)
 
-func NewCrawler(queue Queue, visited Visited, store Store, opt ...CrawlerOption) *Crawler {
+func NewCrawler(cache CrawlerCache, store Store, opt ...CrawlerOption) *Crawler {
 	c := new(Crawler)
 	for _, o := range opt {
 		o(c)
@@ -69,8 +64,7 @@ func NewCrawler(queue Queue, visited Visited, store Store, opt ...CrawlerOption)
 		}
 	}
 
-	c.queue = queue
-	c.visited = visited
+	c.cache = cache
 	c.store = store
 
 	return c
@@ -95,7 +89,7 @@ func WithUserAgentChooser(userAgentChooser StringChooser) CrawlerOption {
 }
 
 func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
-	size, err := c.queue.Size(ctx)
+	size, err := c.cache.QueueSize(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get queue size: %w", err)
 	}
@@ -106,7 +100,7 @@ func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
 	}
 
 	for _, item := range seed {
-		err := c.queue.Enqueue(ctx, item)
+		err := c.cache.QueuePush(ctx, item)
 		if err != nil {
 			return err
 		}
@@ -116,13 +110,13 @@ func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
 }
 
 func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueItem) error {
-	size, err := c.queue.Size(ctx)
+	size, err := c.cache.QueueSize(ctx)
 	if err != nil {
 		return err
 	}
 
 	for size > 0 {
-		curr, err := c.queue.Pop(ctx)
+		curr, err := c.cache.QueuePop(ctx)
 		if err != nil {
 			return err
 		}
@@ -131,19 +125,19 @@ func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueI
 			continue
 		}
 
-		isVisited, err := c.visited.IsVisited(ctx, curr)
+		isVisited, err := c.cache.IsVisited(ctx, curr)
 		if err != nil {
 			fmt.Printf("failed to check if %v is visited: %s\n", curr, err.Error())
 			curr.SetRetries(curr.GetRetries() + 1)
-			c.queue.Enqueue(ctx, curr)
+			c.cache.QueuePush(ctx, curr)
 			continue
 		} else if isVisited {
 			continue
 		} else {
-			c.visited.Visit(ctx, curr)
+			c.cache.Visit(ctx, curr)
 		}
 
-		size, err = c.queue.Size(ctx)
+		size, err = c.cache.QueueSize(ctx)
 		if err != nil {
 			return err
 		}
@@ -166,7 +160,7 @@ func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueI
 		}
 
 		for _, neighbor := range page.Links {
-			c.queue.Enqueue(ctx, makeQueueItem(&neighbor))
+			c.cache.QueuePush(ctx, makeQueueItem(&neighbor))
 		}
 	}
 

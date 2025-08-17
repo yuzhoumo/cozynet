@@ -1083,6 +1083,7 @@ https://gitready.com
 https://giuliomagnifico.blog
 https://glebbahmutov.com/blog/
 https://glenmaddern.com/articles
+https://gobyexample.com
 https://godsip.club
 https://goel.io
 https://gokul.site/blog
@@ -2620,6 +2621,7 @@ https://www.scottohara.me
 https://www.seamusbradley.net
 https://www.seanw.org
 https://www.sebastianhesse.de/blog
+https://www.sebastien-han.fr/blog
 https://www.secwale.com
 https://www.semiversus.com
 https://www.sethhochberg.com

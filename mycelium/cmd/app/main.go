@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sync"
 
 	"mycelium/internal/crawler"
 	"mycelium/internal/redis"
@@ -17,6 +18,7 @@ type MyceliumConfig struct {
 	seedFilePath   string
 	agentsFilePath string
 	proxyFilePath  string
+	crawlRoutines  int
 }
 
 type Mycelium struct {
@@ -91,8 +93,24 @@ func main() {
 		panic(err)
 	}
 
-	err = crawl.Crawl(ctx, func(u *url.URL) crawler.QueueItem { return redis.NewQueueItem(u) })
-	if err != nil {
-		panic(err)
+	makeQueueItem := func(u *url.URL) crawler.QueueItem {
+		return redis.NewQueueItem(u)
 	}
+
+	crawlRoutine := func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		err = crawl.Crawl(ctx, makeQueueItem)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(conf.crawlRoutines)
+
+	for i := 0; i < conf.crawlRoutines; i++ {
+		go crawlRoutine(&wg)
+	}
+
+	wg.Wait()
 }

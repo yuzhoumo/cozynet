@@ -65,6 +65,14 @@ func (p *Page) Marshal() ([]byte, error) {
 	})
 }
 
+func (p *Page) Unmarshal(data []byte) (*Page, error) {
+	var page Page
+	if err := json.Unmarshal(data, &page); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal page: %w", err)
+	}
+	return &page, nil
+}
+
 func (p *Page) String() string {
 	var b strings.Builder
 

@@ -15,6 +15,7 @@ func initCliFlags(conf *MyceliumConfig) {
 	flag.StringVar(&conf.seedFilePath, "seedfile", "", "newline delimited list of seed urls")
 	flag.StringVar(&conf.agentsFilePath, "agentsfile", "", "user agents json")
 	flag.StringVar(&conf.proxyFilePath, "proxyfile", "", "proxy list json")
+	flag.IntVar(&conf.crawlRoutines, "routines", 1, "number of crawler routines to spawn")
 	flag.Parse()
 }
 

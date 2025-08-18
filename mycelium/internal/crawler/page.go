@@ -37,6 +37,10 @@ func urlsToStrings(urls []url.URL) []string {
 	return res
 }
 
+func (p *Page) Prefix() string {
+    return p.Location.Hostname()
+}
+
 func (p *Page) Marshal() ([]byte, error) {
 	return json.Marshal(struct {
 		Title         string   `json:"title"`

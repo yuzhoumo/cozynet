@@ -79,6 +79,7 @@
 9gag.com
 9hits.com
 9j3pwdsa4cp.com
+9to5mac.com
 a-ads.com
 a-b-3-d.com
 a-b-c-8.com
@@ -238,6 +239,7 @@ adtng.com
 adtrafficquality.google
 adukwai.com
 adup-tech.com
+adventofcode.com
 adventori.com
 advertising.com
 adx.com.ru
@@ -2986,6 +2988,7 @@ lura.live
 lxdns.com
 lyft.com
 lync.com
+macrumors.com
 macys.com
 made-in-china.com
 magazineluiza.com.br

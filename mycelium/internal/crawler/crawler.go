@@ -12,6 +12,7 @@ import (
 )
 
 type StoreItem interface {
+    Prefix() string
 	Marshal() ([]byte, error)
 }
 

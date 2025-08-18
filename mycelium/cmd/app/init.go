@@ -18,6 +18,7 @@ func initCliFlags(conf *MyceliumConfig) {
 	flag.StringVar(&conf.agentsFile, "agentsfile", "", "user agents json")
 	flag.StringVar(&conf.proxyFile, "proxyfile", "", "proxy list json")
 	flag.IntVar(&conf.numCrawlers, "routines", 1, "number of crawler routines to spawn")
+	flag.IntVar(&conf.maxIdleSeconds, "maxIdleSeconds", 100, "max seconds to wait for queue items before crawler exits")
 	flag.Parse()
 }
 

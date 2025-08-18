@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -44,6 +45,8 @@ type Crawler struct {
 	proxyChooser     StringChooser
 	cache            CrawlerCache
 	store            Store
+	maxIdleSeconds   int
+	idleSeconds      int
 }
 
 type CrawlerOption func(*Crawler)
@@ -68,6 +71,12 @@ func NewCrawler(cache CrawlerCache, store Store, opt ...CrawlerOption) *Crawler 
 	c.store = store
 
 	return c
+}
+
+func WithMaxIdle(maxIdleSeconds int) CrawlerOption {
+	return func(c *Crawler) {
+		c.maxIdleSeconds = maxIdleSeconds
+	}
 }
 
 func WithHttpClient(client *http.Client) CrawlerOption {
@@ -110,15 +119,25 @@ func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
 }
 
 func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueItem) error {
-	size, err := c.cache.QueueSize(ctx)
-	if err != nil {
-		return err
-	}
-
-	for size > 0 {
+	for {
 		curr, err := c.cache.QueuePop(ctx)
 		if err != nil {
 			return err
+		}
+
+		for curr == nil {
+			if c.idleSeconds > c.maxIdleSeconds {
+				break
+			}
+
+			// idle while queue is empty
+			c.idleSeconds += 1
+			time.Sleep(time.Second)
+
+			curr, err = c.cache.QueuePop(ctx)
+			if err != nil {
+				return err
+			}
 		}
 
 		if curr.GetRetries() > maxRetries {
@@ -135,11 +154,6 @@ func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueI
 			continue
 		} else {
 			c.cache.Visit(ctx, curr)
-		}
-
-		size, err = c.cache.QueueSize(ctx)
-		if err != nil {
-			return err
 		}
 
 		parsedUrl, err := url.Parse(curr.GetLocation())

@@ -32,6 +32,7 @@ func main() {
 
 	// create crawler options
 	options := []crawler.CrawlerOption{}
+	options = append(options, crawler.WithMaxIdle(app.config.maxIdleSeconds))
 	if proxyChooser, err := initProxyChooser(app.config.proxyFile); err != nil {
 		panic(err)
 	} else if proxyChooser != nil {

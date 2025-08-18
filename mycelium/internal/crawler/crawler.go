@@ -119,6 +119,7 @@ func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
 }
 
 func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueItem) error {
+outer:
 	for {
 		curr, err := c.cache.QueuePop(ctx)
 		if err != nil {
@@ -127,7 +128,7 @@ func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueI
 
 		for curr == nil {
 			if c.idleSeconds > c.maxIdleSeconds {
-				break
+				break outer
 			}
 
 			// idle while queue is empty

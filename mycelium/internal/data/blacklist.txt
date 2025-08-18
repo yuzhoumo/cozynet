@@ -1189,6 +1189,11 @@ cookieyes.com
 cookpad.com
 coolccloud.com
 coolkit.cc
+coolmath.com
+coolmath4kids.com
+coolmath4parents.com
+coolmath4teachers.com
+coolmathgames.com
 coolzcloud.com
 coosync.com
 cootek.com
@@ -1346,6 +1351,7 @@ develsoftware.com
 deviantart.com
 device9.com
 devicetask.com
+devshot.io
 dexcom.com
 dexscreener.com
 dhgate.com
@@ -2489,6 +2495,8 @@ ikea.com
 ilovepdf.com
 im-apps.net
 imagedelivery.net
+imageee.com
+imagej.net
 imagekit.io
 images-amazon.com
 imdb.com
@@ -4076,6 +4084,7 @@ realsrv.com
 realtor.com
 reasonlabsapi.com
 reasonsecurity.com
+rebrand.ly
 rebuyengine.com
 recaptcha.net
 receptivity.io
@@ -4931,7 +4940,9 @@ toolmatrix.plus
 toonblast.net
 topix.com
 toponadss.com
+tor.com
 torcache.net
+torproject.org
 torrentleech.org
 torrentz.eu
 tospotify.com
@@ -5646,6 +5657,7 @@ zhanqi.tv
 zhihu.com
 zi-scripts.com
 ziggo.nl
+ziglang.org
 zijieapi.com
 zillow.com
 zillowstatic.com
@@ -5658,6 +5670,7 @@ ziprecruiter.com
 zjcdn.com
 zmaticoo.com
 zmcyu9ypy.com
+znetwork.org
 zog.link
 zoho.com
 zoho.eu

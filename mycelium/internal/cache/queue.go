@@ -1,4 +1,4 @@
-package redis
+package cache
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (rc *RedisCache) QueuePush(ctx context.Context, item crawler.QueueItem) error {
+func (rc *CrawlerCache) QueuePush(ctx context.Context, item crawler.QueueItem) error {
 	data, err := proto.Marshal(item)
 	if err != nil {
 		return fmt.Errorf("failed to serialize redis queue item: %w", err)
@@ -22,7 +22,7 @@ func (rc *RedisCache) QueuePush(ctx context.Context, item crawler.QueueItem) err
 	return nil
 }
 
-func (rc *RedisCache) QueuePop(ctx context.Context) (crawler.QueueItem, error) {
+func (rc *CrawlerCache) QueuePop(ctx context.Context) (crawler.QueueItem, error) {
 	res, err := rc.rdb.LPop(ctx, "queue").Bytes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to pop redis queue item: %w", err)
@@ -38,7 +38,7 @@ func (rc *RedisCache) QueuePop(ctx context.Context) (crawler.QueueItem, error) {
 	return &item, nil
 }
 
-func (rc *RedisCache) QueueSize(ctx context.Context) (int32, error) {
+func (rc *CrawlerCache) QueueSize(ctx context.Context) (int32, error) {
 	res, err := rc.rdb.LLen(ctx, "queue").Result()
 	if err != nil {
 		return -1, fmt.Errorf("failed to get redis queue size: %w", err)

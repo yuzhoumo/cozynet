@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-    "path/filepath"
+	"path/filepath"
 	"strings"
 
 	"mycelium/internal/crawler"
@@ -27,14 +27,14 @@ func (fs *FileStore) Store(item crawler.StoreItem, extension string) (string, er
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal store item: %w", err)
 	}
-    prefix := item.Prefix()
+	prefix := item.Prefix()
 	id := uuid.New()
 	idStr := id.String()
 	out := path.Join(fs.outDirectory, prefix, idStr+strings.ToLower(extension))
 
-    if err := os.MkdirAll(filepath.Dir(out), 0755); err != nil {
-        return "", fmt.Errorf("failed to create directories: %w", err)
-    }
+	if err := os.MkdirAll(filepath.Dir(out), 0755); err != nil {
+		return "", fmt.Errorf("failed to create directories: %w", err)
+	}
 	if err := os.WriteFile(out, data, 0755); err != nil {
 		return "", fmt.Errorf("failed to write file %s: %w", out, err)
 	}

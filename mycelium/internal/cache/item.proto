@@ -1,4 +1,4 @@
-option go_package = "mycelium/internal/redis";
+option go_package = "mycelium/internal/cache";
 
 message RedisQueueItem {
   required string location = 1;

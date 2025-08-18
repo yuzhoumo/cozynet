@@ -38,7 +38,7 @@ func urlsToStrings(urls []url.URL) []string {
 }
 
 func (p *Page) Prefix() string {
-    return p.Location.Hostname()
+	return p.Location.Hostname()
 }
 
 func (p *Page) Marshal() ([]byte, error) {

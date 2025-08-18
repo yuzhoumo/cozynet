@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"sync"
 
+	"mycelium/internal/cache"
 	"mycelium/internal/crawler"
-	"mycelium/internal/redis"
 )
 
 type Environment struct {
@@ -28,7 +28,7 @@ type MyceliumConfig struct {
 
 type Mycelium struct {
 	config  MyceliumConfig
-	cache   redis.RedisCache
+	cache   cache.CrawlerCache
 	crawler crawler.Crawler
 }
 
@@ -41,7 +41,7 @@ func (app *Mycelium) seed(ctx context.Context) {
 	}
 
 	for _, seedUrl := range urls {
-		seed = append(seed, redis.NewQueueItem(seedUrl))
+		seed = append(seed, cache.NewQueueItem(seedUrl))
 	}
 
 	err = app.crawler.Seed(ctx, seed)
@@ -54,7 +54,7 @@ func (app *Mycelium) crawl(ctx context.Context) {
 	var wg sync.WaitGroup
 
 	makeQueueItem := func(u *url.URL) crawler.QueueItem {
-		return redis.NewQueueItem(u)
+		return cache.NewQueueItem(u)
 	}
 
 	crawlRoutine := func(wg *sync.WaitGroup, i int) {

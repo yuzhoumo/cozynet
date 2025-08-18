@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"mycelium/internal/cache"
 	"mycelium/internal/crawler"
 	"mycelium/internal/filter"
-	"mycelium/internal/redis"
 	"mycelium/internal/store"
 )
 
@@ -20,12 +20,12 @@ func main() {
 	}
 
 	// create redis cache
-	redisCacheOptions := redis.RedisCacheOptions{
+	redisCacheOptions := cache.CrawlerCacheOptions{
 		Addr: env.RedisAddr,
 		Pass: env.RedisPass,
 		DB:   env.RedisDB,
 	}
-	if cache, err := redis.NewRedisCache(ctx, &redisCacheOptions); err != nil {
+	if cache, err := cache.NewRedisCache(ctx, &redisCacheOptions); err != nil {
 		panic(err)
 	} else {
 		app.cache = *cache

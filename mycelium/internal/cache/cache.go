@@ -1,4 +1,4 @@
-package redis
+package cache
 
 import (
 	"context"
@@ -6,18 +6,18 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type RedisCache struct {
+type CrawlerCache struct {
 	rdb *redis.Client
 }
 
-type RedisCacheOptions struct {
+type CrawlerCacheOptions struct {
 	Addr string
 	Pass string
 	DB   int
 }
 
-func NewRedisCache(ctx context.Context, options *RedisCacheOptions) (*RedisCache, error) {
-	var rc RedisCache
+func NewRedisCache(ctx context.Context, options *CrawlerCacheOptions) (*CrawlerCache, error) {
+	var rc CrawlerCache
 
 	rc.rdb = redis.NewClient(&redis.Options{
 		Addr:     options.Addr,

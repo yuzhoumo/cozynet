@@ -4,7 +4,7 @@
 // 	protoc        v5.29.3
 // source: item.proto
 
-package redis
+package cache
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

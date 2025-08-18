@@ -18,11 +18,12 @@ type Environment struct {
 }
 
 type MyceliumConfig struct {
-	seedFile       string
-	agentsFile     string
-	proxyFile      string
-	numCrawlers    int
-	maxIdleSeconds int
+	seedFile            string
+	agentsFile          string
+	proxyFile           string
+	domainBlacklistFile string
+	numCrawlers         int
+	maxIdleSeconds      int
 }
 
 type Mycelium struct {

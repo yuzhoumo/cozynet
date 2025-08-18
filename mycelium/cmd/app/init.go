@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -17,6 +16,7 @@ func initCliFlags(conf *MyceliumConfig) {
 	flag.StringVar(&conf.seedFile, "seedfile", "", "newline delimited list of seed urls")
 	flag.StringVar(&conf.agentsFile, "agentsfile", "", "user agents json")
 	flag.StringVar(&conf.proxyFile, "proxyfile", "", "proxy list json")
+	flag.StringVar(&conf.domainBlacklistFile, "domainsblacklist", "", "newline delimited list of blacklisted domains")
 	flag.IntVar(&conf.numCrawlers, "routines", 1, "number of crawler routines to spawn")
 	flag.IntVar(&conf.maxIdleSeconds, "maxIdleSeconds", 100, "max seconds to wait for queue items before crawler exits")
 	flag.Parse()
@@ -41,15 +41,30 @@ func initEnvironment(env *Environment) error {
 	return nil
 }
 
-func initSeedUrls(path string) ([]*url.URL, error) {
-	abspath, err := filepath.Abs(path)
+func initDomainBlacklist(path string) ([]string, error) {
+	domainfile, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path to seed file %s: %w", path, err)
+		return nil, fmt.Errorf("failed to open seed file %s: %w", path, err)
+	}
+	defer domainfile.Close()
+
+	var res []string
+	scanner := bufio.NewScanner(domainfile)
+	line := 1
+
+	for scanner.Scan() {
+		domain := scanner.Text()
+		res = append(res, domain)
+		line++
 	}
 
-	seedfile, err := os.Open(abspath)
+	return res, nil
+}
+
+func initSeedUrls(path string) ([]*url.URL, error) {
+	seedfile, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open seed file %s: %w", abspath, err)
+		return nil, fmt.Errorf("failed to open seed file %s: %w", path, err)
 	}
 	defer seedfile.Close()
 

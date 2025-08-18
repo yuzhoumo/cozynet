@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"mycelium/internal/crawler"
+	"mycelium/internal/filter"
 	"mycelium/internal/redis"
 	"mycelium/internal/store"
 )
@@ -42,6 +43,12 @@ func main() {
 		panic(err)
 	} else if uaChooser != nil {
 		options = append(options, crawler.WithUserAgentChooser(uaChooser))
+	}
+	if domainBlacklist, err := initDomainBlacklist(app.config.domainBlacklistFile); err != nil {
+		panic(err)
+	} else {
+		filter := filter.NewDomainFilter(domainBlacklist)
+		options = append(options, crawler.WithUrlFilters([]crawler.UrlFilter{filter}))
 	}
 
 	filestore := store.NewFileStore(env.FilestoreOutDir)

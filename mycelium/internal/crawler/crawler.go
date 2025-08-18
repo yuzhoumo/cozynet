@@ -20,6 +20,10 @@ type Store interface {
 	Retrieve(id string, extension string) (data []byte, err error)
 }
 
+type UrlFilter interface {
+	Filter(*url.URL) bool
+}
+
 type QueueItem interface {
 	GetLocation() string
 	GetRetries() int32
@@ -45,6 +49,7 @@ type Crawler struct {
 	proxyChooser     StringChooser
 	cache            CrawlerCache
 	store            Store
+	urlFilters       []UrlFilter
 	maxIdleSeconds   int
 	idleSeconds      int
 }
@@ -71,6 +76,12 @@ func NewCrawler(cache CrawlerCache, store Store, opt ...CrawlerOption) *Crawler 
 	c.store = store
 
 	return c
+}
+
+func WithUrlFilters(filters []UrlFilter) CrawlerOption {
+	return func(c *Crawler) {
+		c.urlFilters = filters
+	}
 }
 
 func WithMaxIdle(maxIdleSeconds int) CrawlerOption {
@@ -163,6 +174,11 @@ outer:
 			continue
 		}
 
+		if c.filter(parsedUrl) {
+			fmt.Printf("[BLOCKED] %s\n", curr.GetLocation())
+			continue
+		}
+
 		page, err := c.GetPage(ctx, parsedUrl)
 		if err != nil {
 			fmt.Printf("failed to get page %s: %s\n", curr.GetLocation(), err.Error())
@@ -180,6 +196,15 @@ outer:
 	}
 
 	return nil
+}
+
+func (c *Crawler) filter(loc *url.URL) bool {
+	for _, filter := range c.urlFilters {
+		if filter.Filter(loc) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Crawler) GetPage(ctx context.Context, loc *url.URL) (*Page, error) {

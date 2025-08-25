@@ -1,0 +1,7 @@
+[project]
+name = "inhibitor"
+version = "0.1.0"
+description = "filtering service for web crawler queue"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []

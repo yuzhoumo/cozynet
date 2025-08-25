@@ -46,7 +46,7 @@ func main() {
 	}
 	if domainBlacklist, err := initDomainBlacklist(app.config.domainBlacklistFile); err != nil {
 		panic(err)
-	} else {
+	} else if domainBlacklist != nil {
 		filter := filter.NewDomainFilter(domainBlacklist)
 		options = append(options, crawler.WithUrlFilters([]crawler.UrlFilter{filter}))
 	}

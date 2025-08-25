@@ -42,9 +42,12 @@ func initEnvironment(env *Environment) error {
 }
 
 func initDomainBlacklist(path string) ([]string, error) {
+	if path == "" {
+		return nil, nil
+	}
 	domainfile, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open seed file %s: %w", path, err)
+		return nil, fmt.Errorf("failed to open blacklist file %s: %w", path, err)
 	}
 	defer domainfile.Close()
 

@@ -22,7 +22,7 @@ type Store interface {
 }
 
 type UrlFilter interface {
-	Filter(*url.URL) bool
+	Filter(loc *url.URL) bool
 }
 
 type QueueItem interface {

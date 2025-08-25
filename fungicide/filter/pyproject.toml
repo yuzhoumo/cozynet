@@ -1,7 +1,11 @@
 [project]
-name = "inhibitor"
+name = "service"
 version = "0.1.0"
 description = "filtering service for web crawler queue"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "joblib>=1.5.1",
+    "redis[hiredis]>=6.4.0",
+    "scikit-learn>=1.7.1",
+]

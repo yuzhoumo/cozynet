@@ -8,6 +8,5 @@ dependencies = [
     "nltk>=3.9.1",
     "pip>=25.2",
     "scikit-learn>=1.7.1",
-    "skl2onnx>=1.19.1",
     "spacy>=3.8.7",
 ]

@@ -72,6 +72,7 @@ class App:
     redis_client: redis.Redis
     input_queue_key: str
     output_queue_key: str
+    crawler_queue_key: str
     blacklist_key: str
 
     # webpage classifier
@@ -105,9 +106,13 @@ class App:
 
     def push_page(self, page: Page):
         """
-        Push a page to the redis output queue.
+        Push a page to the redis output queue. Also push the page outlinks to
+        the crawler's ingest queue.
         """
-        self.redis_client.rpush(self.output_queue_key, json.dumps(page))
+        pipe = self.redis_client.pipeline()
+        pipe.rpush(self.output_queue_key, json.dumps(page))
+        pipe.rpush(self.crawler_queue_key, *page.links)
+        pipe.execute()
 
     def blacklist(self, page: Page):
         """
@@ -137,6 +142,7 @@ def init_app() -> App:
     redis_max_retries   = os.getenv('REDIS_MAX_RETRIES', '')
     input_queue_key     = os.getenv('REDIS_INPUT_QUEUE_KEY', '')
     output_queue_key    = os.getenv('REDIS_OUTPUT_QUEUE_KEY', '')
+    crawler_queue_key   = os.getenv('REDIS_CRAWLER_QUEUE_KEY', '')
     blacklist_key       = os.getenv('REDIS_BLACKLIST_KEY', '')
     model_file          = os.getenv('MODEL_FILE', '')
     vectorizer_file     = os.getenv('VECTORIZER_FILE', '')
@@ -162,6 +168,7 @@ def init_app() -> App:
         redis_client=client,
         input_queue_key=input_queue_key,
         output_queue_key=output_queue_key,
+        crawler_queue_key=crawler_queue_key,
         blacklist_key=blacklist_key,
         clf=clf,
         vectorizer=vectorizer,

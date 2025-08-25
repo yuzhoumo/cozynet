@@ -86,10 +86,10 @@ class Page(object):
 class App:
     # input/output queues
     redis_client: redis.Redis
-    input_queue_key: str
-    output_queue_key: str
-    crawler_queue_key: str
-    blacklist_key: str
+    fungicide_queue_key: str
+    taxonomist_queue_key: str
+    mycelium_queue_key: str
+    mycelium_blacklist_key: str
 
     # webpage classifier
     clf: LogisticRegression
@@ -115,7 +115,7 @@ class App:
         """
         Wait for a page from the redis queue.
         """
-        raw = self.redis_client.blpop([self.input_queue_key], timeout)
+        raw = self.redis_client.blpop([self.fungicide_queue_key], timeout)
         _, value = cast(tuple[str, bytes], raw)
         json_str = value.decode(encoding='utf-8')
         return json.loads(json_str, object_hook = Page.as_page)
@@ -129,8 +129,8 @@ class App:
         outlinks = [s_to_outlink(link) for link in page.links]
 
         pipe = self.redis_client.pipeline()
-        pipe.rpush(self.output_queue_key, json.dumps(page))
-        pipe.rpush(self.crawler_queue_key, *outlinks)
+        pipe.rpush(self.taxonomist_queue_key, json.dumps(page))
+        pipe.rpush(self.mycelium_queue_key, *outlinks)
         pipe.execute()
 
     def blacklist(self, page: Page):
@@ -138,7 +138,7 @@ class App:
         Add a page's domain to the redis blacklist.
         """
         domain = urlparse(page.location).netloc
-        self.redis_client.sadd(self.blacklist_key, domain)
+        self.redis_client.sadd(self.mycelium_blacklist_key, domain)
 
     def classify(self, page: Page) -> tuple[float, float]:
         """
@@ -156,16 +156,16 @@ def init_app() -> App:
     Read configurations from environment and instantiate app.
     """
     load_dotenv()
-    redis_host          = os.getenv('REDIS_HOST', '')
-    redis_port          = os.getenv('REDIS_PORT', '')
-    redis_max_retries   = os.getenv('REDIS_MAX_RETRIES', '')
-    input_queue_key     = os.getenv('REDIS_INPUT_QUEUE_KEY', '')
-    output_queue_key    = os.getenv('REDIS_OUTPUT_QUEUE_KEY', '')
-    crawler_queue_key   = os.getenv('REDIS_CRAWLER_QUEUE_KEY', '')
-    blacklist_key       = os.getenv('REDIS_BLACKLIST_KEY', '')
-    model_file          = os.getenv('MODEL_FILE', '')
-    vectorizer_file     = os.getenv('VECTORIZER_FILE', '')
-    rejection_threshold = os.getenv('REJECTION_THRESHOLD', '')
+    redis_host             = os.getenv('REDIS_HOST', '')
+    redis_port             = os.getenv('REDIS_PORT', '')
+    redis_max_retries      = os.getenv('REDIS_MAX_RETRIES', '')
+    fungicide_queue_key    = os.getenv('REDIS_FUNGICIDE_QUEUE_KEY', '')
+    taxnonomist_queue_key  = os.getenv('REDIS_TAXNOMIST_QUEUE_KEY', '')
+    mycelium_queue_key     = os.getenv('REDIS_MYCELIUM_QUEUE_KEY', '')
+    mycelium_blacklist_key = os.getenv('REDIS_MYCLIEUM_BLACKLIST_KEY', '')
+    model_file             = os.getenv('MODEL_FILE', '')
+    vectorizer_file        = os.getenv('VECTORIZER_FILE', '')
+    rejection_threshold    = os.getenv('REJECTION_THRESHOLD', '')
 
     # create redis client
     retry = Retry(ExponentialBackoff(), int(redis_max_retries))
@@ -185,10 +185,10 @@ def init_app() -> App:
 
     app = App(
         redis_client=client,
-        input_queue_key=input_queue_key,
-        output_queue_key=output_queue_key,
-        crawler_queue_key=crawler_queue_key,
-        blacklist_key=blacklist_key,
+        fungicide_queue_key=fungicide_queue_key,
+        taxonomist_queue_key=taxnonomist_queue_key,
+        mycelium_queue_key=mycelium_queue_key,
+        mycelium_blacklist_key=mycelium_blacklist_key,
         clf=clf,
         vectorizer=vectorizer,
         rejection_threshold=int(rejection_threshold) / 100.0,

@@ -30,6 +30,9 @@ class Page(object):
     location:       str
 
     def tokenize(self):
+        """
+        Tokenize page content into a single string.
+        """
         text_to_tokenize = []
         for field in fields(self):
             value = getattr(self, field.name)
@@ -46,6 +49,9 @@ class Page(object):
 
     @staticmethod
     def as_page(map: dict[str, Any]) -> 'Page':
+        """
+        Convert a dictionary into a page object.
+        """
         return Page(
             title=map.get("title", ""),
             description=map.get("description", ""),
@@ -73,20 +79,48 @@ class App:
     vectorizer: TfidfVectorizer
     rejection_threshold: float
 
+    def run(self):
+        """
+        Continually poll the redis queue for pages and process them.
+        """
+        while True:
+            page = self.wait_for_page()
+            not_dev_proba, _ = self.classify(page)
+
+            if not_dev_proba < self.rejection_threshold:
+                self.push_page(page)
+                print("PUSH ", int(not_dev_proba * 100), page.location)
+            else:
+                self.blacklist(page)
+                print("BLOCK", int(not_dev_proba * 100), page.location)
+
     def wait_for_page(self, timeout=0) -> Page:
+        """
+        Wait for a page from the redis queue.
+        """
         raw = self.redis_client.blpop([self.input_queue_key], timeout)
         _, value = cast(tuple[str, bytes], raw)
         json_str = value.decode(encoding='utf-8')
         return json.loads(json_str, object_hook = Page.as_page)
 
     def push_page(self, page: Page):
+        """
+        Push a page to the redis output queue.
+        """
         self.redis_client.rpush(self.output_queue_key, json.dumps(page))
 
     def blacklist(self, page: Page):
+        """
+        Add a page's domain to the redis blacklist.
+        """
         domain = urlparse(page.location).netloc
         self.redis_client.sadd(self.blacklist_key, domain)
 
     def classify(self, page: Page) -> tuple[float, float]:
+        """
+        Classify a page. Returns confidence from 0-1 if page is not a dev blog
+        and if a page is a dev blog respectively.
+        """
         text = page.tokenize()
         matrix = self.vectorizer.transform([text])
         not_dev, dev = self.clf.predict_proba(matrix)
@@ -94,6 +128,10 @@ class App:
 
 
 def init_app() -> App:
+    """
+    Read configurations from environment and instantiate app.
+    """
+    load_dotenv()
     redis_host          = os.getenv('REDIS_HOST', '')
     redis_port          = os.getenv('REDIS_PORT', '')
     redis_max_retries   = os.getenv('REDIS_MAX_RETRIES', '')
@@ -104,6 +142,7 @@ def init_app() -> App:
     vectorizer_file     = os.getenv('VECTORIZER_FILE', '')
     rejection_threshold = os.getenv('REJECTION_THRESHOLD', '')
 
+    # create redis client
     retry = Retry(ExponentialBackoff(), int(redis_max_retries))
     client = redis.Redis(
         host=redis_host,
@@ -112,6 +151,7 @@ def init_app() -> App:
         retry=retry,
     )
 
+    # load model and vectorizer
     clf, vectorizer = None, None
     if os.path.isfile(model_file) and os.path.isfile(vectorizer_file):
         clf, vectorizer = joblib.load(model_file), joblib.load(vectorizer_file)
@@ -133,21 +173,9 @@ def init_app() -> App:
 
 
 def main():
-    load_dotenv()
     app = init_app()
-
     print("app started. waiting for input...")
-
-    while True:
-        page = app.wait_for_page()
-        not_dev_proba, _ = app.classify(page)
-
-        if not_dev_proba < app.rejection_threshold:
-            app.push_page(page)
-            print("PUSH ", int(not_dev_proba * 100), page.location)
-        else:
-            app.blacklist(page)
-            print("BLOCK", int(not_dev_proba * 100), page.location)
+    app.run()
 
 
 if __name__ == "__main__":

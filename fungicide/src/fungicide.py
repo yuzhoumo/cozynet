@@ -93,24 +93,6 @@ class App:
         return not_dev, dev
 
 
-def main():
-    load_dotenv()
-    app = init_app()
-
-    print("app started. waiting for input...")
-
-    while True:
-        page = app.wait_for_page()
-        not_dev_proba, _ = app.classify(page)
-
-        print(not_dev_proba, page.location)
-
-        if not_dev_proba < app.rejection_threshold:
-            app.push_page(page)
-        else:
-            app.blacklist(page)
-
-
 def init_app() -> App:
     redis_host          = os.getenv('REDIS_HOST', '')
     redis_port          = os.getenv('REDIS_PORT', '')
@@ -148,6 +130,24 @@ def init_app() -> App:
 
     print("successfully initialized app")
     return app
+
+
+def main():
+    load_dotenv()
+    app = init_app()
+
+    print("app started. waiting for input...")
+
+    while True:
+        page = app.wait_for_page()
+        not_dev_proba, _ = app.classify(page)
+
+        if not_dev_proba < app.rejection_threshold:
+            app.push_page(page)
+            print("PUSH ", int(not_dev_proba * 100), page.location)
+        else:
+            app.blacklist(page)
+            print("BLOCK", int(not_dev_proba * 100), page.location)
 
 
 if __name__ == "__main__":

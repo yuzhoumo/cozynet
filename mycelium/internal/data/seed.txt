@@ -26,7 +26,6 @@ http://blog.kirov.be
 http://blog.lerner.co.il
 http://blog.rmrubert.eu
 http://blog.thislongrun.com
-http://blog.zimmerman.io
 http://bretthard.in
 http://canolcer.com
 http://chrislaco.com
@@ -484,6 +483,7 @@ https://blog.jasonmhare.com
 https://blog.jbruni.com.br
 https://blog.jessfraz.com
 https://blog.jessitron.com
+https://blog.jez.io/
 https://blog.jfo.click
 https://blog.jgc.org
 https://blog.jmthornton.net
@@ -809,6 +809,7 @@ https://depth-first.com
 https://derekbarber.ca
 https://derekmyers.com
 https://desinle.com
+https://dev.arie.bovenberg.net
 https://dev.to
 https://devapt.com
 https://developer.run

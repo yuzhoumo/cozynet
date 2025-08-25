@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 from dataclasses import dataclass, fields
 from typing import cast, Any
 
+from dotenv import load_dotenv
+
 import redis
 from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
@@ -92,11 +94,17 @@ class App:
 
 
 def main():
+    load_dotenv()
     app = init_app()
+
+    print("app started. waiting for input...")
+
     while True:
         page = app.wait_for_page()
         not_dev_proba, _ = app.classify(page)
+
         print(not_dev_proba, page.location)
+
         if not_dev_proba < app.rejection_threshold:
             app.push_page(page)
         else:
@@ -115,18 +123,31 @@ def init_app() -> App:
     rejection_threshold = os.getenv('REJECTION_THRESHOLD', '')
 
     retry = Retry(ExponentialBackoff(), int(redis_max_retries))
-    r = redis.Redis(
+    client = redis.Redis(
         host=redis_host,
         port=int(redis_port),
         decode_responses=True,
         retry=retry,
     )
 
+    clf, vectorizer = None, None
     if os.path.isfile(model_file) and os.path.isfile(vectorizer_file):
         clf, vectorizer = joblib.load(model_file), joblib.load(vectorizer_file)
-        return App(r, input_queue_key, output_queue_key, blacklist_key, clf, vectorizer, int(rejection_threshold) / 100.0)
     else:
         raise FileNotFoundError("failed to load model or vectorizer")
+
+    app = App(
+        redis_client=client,
+        input_queue_key=input_queue_key,
+        output_queue_key=output_queue_key,
+        blacklist_key=blacklist_key,
+        clf=clf,
+        vectorizer=vectorizer,
+        rejection_threshold=int(rejection_threshold) / 100.0,
+    )
+
+    print("successfully initialized app")
+    return app
 
 
 if __name__ == "__main__":

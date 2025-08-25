@@ -2,7 +2,6 @@ import os
 import re
 import json
 import joblib
-import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -10,14 +9,9 @@ from sklearn.metrics import classification_report
 from sklearn.feature_extraction import text
 
 
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
-nlp.max_length = 2_000_000
-
-
 def tokenize(text):
     raw_tokens = re.findall(r'\b\w+\b', text.lower())
-    tokens = [t for t in raw_tokens if all(c.isascii() and c.isalpha() for c in t) and len(t) > 3]
-    return [token.lemma_ for token in nlp(" ".join(tokens))]
+    return [t for t in raw_tokens if all(c.isascii() and c.isalpha() for c in t) and len(t) > 3]
 
 
 def process_json_file(file_path):
@@ -90,7 +84,7 @@ def classify_json(file_path, clf, vectorizer):
 
 
 if __name__ == '__main__':
-    model_file, vectorizer_file = 'models/model.dump', "models/vectorizer.dump"
+    model_file, vectorizer_file = '../models/model.dump', "../models/vectorizer.dump"
     if os.path.isfile(model_file) and os.path.isfile(vectorizer_file):
         clf = joblib.load(model_file)
         vectorizer = joblib.load(vectorizer_file)

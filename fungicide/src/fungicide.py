@@ -17,6 +17,22 @@ from sklearn.linear_model import LogisticRegression
 
 
 @dataclass
+class Outlink:
+    location: str
+    retries:  int
+
+    @staticmethod
+    def as_outlink(map: dict[str, Any]) -> 'Outlink':
+        """
+        Convert a dictionary into a page object.
+        """
+        return Outlink(
+            location=map.get("location", ""),
+            retries=map.get("retries", "")
+        )
+
+
+@dataclass
 class Page(object):
     title:          str
     description:    str
@@ -109,9 +125,12 @@ class App:
         Push a page to the redis output queue. Also push the page outlinks to
         the crawler's ingest queue.
         """
+        s_to_outlink = lambda s: json.dumps(Outlink(location=s, retries=0))
+        outlinks = [s_to_outlink(link) for link in page.links]
+
         pipe = self.redis_client.pipeline()
         pipe.rpush(self.output_queue_key, json.dumps(page))
-        pipe.rpush(self.crawler_queue_key, *page.links)
+        pipe.rpush(self.crawler_queue_key, *outlinks)
         pipe.execute()
 
     def blacklist(self, page: Page):

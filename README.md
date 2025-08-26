@@ -25,4 +25,4 @@ of profit-driven intent.
 
 ## Architecture
 
-![architecture diagram](./docs/diagram.svg)
+![architecture diagram](docs/architecture.svg)

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"sync"
 
 	"mycelium/internal/cache"
@@ -11,13 +10,13 @@ import (
 )
 
 type Environment struct {
-	RedisAddr              string
-	RedisPass              string
-	RedisDB                int
-	FilestoreOutDir        string
-	FungicideQueueKey      string
-	MyceliumIngressKey     string
-	MyceliumBlacklistKey   string
+	RedisAddr            string
+	RedisPass            string
+	RedisDB              int
+	FilestoreOutDir      string
+	FungicideQueueKey    string
+	MyceliumIngressKey   string
+	MyceliumBlacklistKey string
 }
 
 type MyceliumConfig struct {
@@ -36,15 +35,14 @@ type Mycelium struct {
 }
 
 func (app *Mycelium) seed(ctx context.Context) {
-	var seed []crawler.QueueItem
-
 	urls, err := initSeedUrls(app.config.seedFile)
 	if err != nil {
 		panic(err)
 	}
 
+	var seed []string
 	for _, seedUrl := range urls {
-		seed = append(seed, cache.NewQueueItem(seedUrl))
+		seed = append(seed, seedUrl.String())
 	}
 
 	err = app.crawler.Seed(ctx, seed)
@@ -56,13 +54,10 @@ func (app *Mycelium) seed(ctx context.Context) {
 func (app *Mycelium) crawl(ctx context.Context) {
 	var wg sync.WaitGroup
 
-	makeQueueItem := func(u *url.URL) crawler.QueueItem {
-		return cache.NewQueueItem(u)
-	}
-
 	crawlRoutine := func(wg *sync.WaitGroup, i int) {
 		defer wg.Done()
-		err := app.crawler.Crawl(ctx, makeQueueItem)
+		fmt.Printf("Crawler %d starting\n", i)
+		err := app.crawler.Crawl(ctx)
 		if err != nil {
 			panic(fmt.Errorf("crawler %d failed with error: %w", i, err))
 		}
@@ -74,15 +69,4 @@ func (app *Mycelium) crawl(ctx context.Context) {
 	}
 
 	wg.Wait()
-}
-
-func (app *Mycelium) consumeIngress(ctx context.Context) {
-	makeQueueItem := func(u *url.URL) crawler.QueueItem {
-		return cache.NewQueueItem(u)
-	}
-
-	err := app.crawler.ConsumeIngressQueue(ctx, makeQueueItem)
-	if err != nil {
-		panic(fmt.Errorf("ingress consumer failed with error: %w", err))
-	}
 }

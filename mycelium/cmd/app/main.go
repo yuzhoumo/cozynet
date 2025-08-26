@@ -66,11 +66,5 @@ func main() {
 	app.crawler = *crawler.NewCrawler(&app.cache, filestore, options...)
 
 	app.seed(ctx)
-
-	// Run crawler and ingress consumer concurrently if fungicide integration is enabled
-	if env.MyceliumIngressKey != "" {
-		go app.consumeIngress(ctx)
-	}
-
 	app.crawl(ctx)
 }

@@ -20,9 +20,12 @@ func NewRedisCache(ctx context.Context, options *CrawlerCacheOptions) (*CrawlerC
 	var rc CrawlerCache
 
 	rc.rdb = redis.NewClient(&redis.Options{
-		Addr:     options.Addr,
-		Password: options.Pass,
-		DB:       options.DB,
+		Addr:         options.Addr,
+		Password:     options.Pass,
+		DB:           options.DB,
+		PoolSize:     50, // Increase pool size for multiple crawlers
+		MinIdleConns: 10, // Keep minimum connections open
+		MaxRetries:   3,  // Retry failed commands
 	})
 
 	if _, err := rc.rdb.Ping(ctx).Result(); err != nil {

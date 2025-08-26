@@ -3,7 +3,7 @@
 > "The original idea of the web was that it should be a collaborative space
 > where you can communicate through sharing information." - Tim Berners-Lee
 
-![screenshot](docs/homepage_screenshot.png)
+![screenshot](docs/screenshot.png)
 
 Cozynet.dev is a search engine designed to index and surface personal
 developer blogs. The public web has grown into a cesspool dominated by
@@ -27,4 +27,4 @@ of profit-driven intent.
 
 ## Architecture
 
-![architecture diagram](docs/cozynet.drawio.svg)
+![architecture diagram](docs/architecture.svg)

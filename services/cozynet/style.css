@@ -300,7 +300,6 @@ h1::after {
 }
 
 .loading::before {
-    content: "$ ";
     color: #f85149;
 }
 

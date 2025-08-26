@@ -81,13 +81,13 @@ class CozyNetSearch {
 
         // Animate counters that have increased
         const animationsRunning = [];
-        
+
         if (newStats.total_pages > this.previousStats.total_pages) {
             animationsRunning.push(this.animateCounter('pages', this.previousStats.total_pages, newStats.total_pages));
         } else {
             document.getElementById('pages-stat').textContent = `${newStats.total_pages.toLocaleString()} pages indexed`;
         }
-        
+
         if (newStats.unique_domains > this.previousStats.unique_domains) {
             animationsRunning.push(this.animateCounter('domains', this.previousStats.unique_domains, newStats.unique_domains));
         } else {
@@ -103,22 +103,22 @@ class CozyNetSearch {
         const elementId = type === 'pages' ? 'pages-stat' : 'domains-stat';
         const element = document.getElementById(elementId);
         const suffix = type === 'pages' ? ' pages indexed' : ' domains';
-        
+
         // Add animation class
         element.classList.add('stat-animating');
-        
+
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
+
             // Easing function for smooth animation
             const easedProgress = 1 - Math.pow(1 - progress, 3);
-            
+
             const currentValue = Math.floor(fromValue + (toValue - fromValue) * easedProgress);
-            
+
             // Update only this specific element
             element.textContent = currentValue.toLocaleString() + suffix;
-            
+
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
@@ -128,7 +128,7 @@ class CozyNetSearch {
                 }, 100);
             }
         };
-        
+
         requestAnimationFrame(animate);
         return animate;
     }

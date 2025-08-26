@@ -4,19 +4,18 @@ class CozyNetSearch {
         this.currentPage = 1;
         this.perPage = 10;
         this.currentQuery = '';
-        this.currentDomain = '';
-        this.currentMinWords = null;
-        
+        this.statsInterval = null;
+        this.previousStats = null;
+
         this.initializeElements();
         this.bindEvents();
         this.loadStats();
+        this.startStatsPolling();
     }
 
     initializeElements() {
         this.searchForm = document.getElementById('search-form');
         this.searchInput = document.getElementById('search-input');
-        this.domainFilter = document.getElementById('domain-filter');
-        this.minWordsFilter = document.getElementById('min-words');
         this.loading = document.getElementById('loading');
         this.error = document.getElementById('error');
         this.resultsContainer = document.getElementById('results-container');
@@ -40,21 +39,98 @@ class CozyNetSearch {
     }
 
     async loadStats() {
+        console.log('Loading stats...');
         try {
             const response = await fetch(`${this.apiBaseUrl}/stats`, {
                 method: 'GET',
                 mode: 'cors'
             });
             const stats = await response.json();
-            
-            this.stats.innerHTML = `
-                <span>${stats.total_pages.toLocaleString()} pages indexed</span>
-                <span>${stats.unique_domains} domains</span>
-                <span>Avg ${Math.round(stats.average_word_count)} words/page</span>
-            `;
+            console.log('Stats loaded:', stats);
+
+            this.updateStats(stats);
         } catch (error) {
+            console.error('Stats loading error:', error);
             this.stats.innerHTML = '<span>Stats unavailable</span>';
         }
+    }
+
+    updateStats(newStats) {
+        if (!this.previousStats) {
+            // First load, just display the stats
+            this.stats.innerHTML = `
+                <span id="pages-stat">${newStats.total_pages.toLocaleString()} pages indexed</span>
+                <span id="domains-stat">${newStats.unique_domains} domains</span>
+                <span id="words-stat">avg ${Math.round(newStats.average_word_count)} words/page</span>
+            `;
+            this.previousStats = newStats;
+            return;
+        }
+
+        // Set up the HTML with IDs if not already there
+        if (!document.getElementById('pages-stat')) {
+            this.stats.innerHTML = `
+                <span id="pages-stat">${this.previousStats.total_pages.toLocaleString()} pages indexed</span>
+                <span id="domains-stat">${this.previousStats.unique_domains} domains</span>
+                <span id="words-stat">avg ${Math.round(this.previousStats.average_word_count)} words/page</span>
+            `;
+        }
+
+        // Update word count immediately (no animation needed)
+        document.getElementById('words-stat').textContent = `avg ${Math.round(newStats.average_word_count)} words/page`;
+
+        // Animate counters that have increased
+        const animationsRunning = [];
+        
+        if (newStats.total_pages > this.previousStats.total_pages) {
+            animationsRunning.push(this.animateCounter('pages', this.previousStats.total_pages, newStats.total_pages));
+        } else {
+            document.getElementById('pages-stat').textContent = `${newStats.total_pages.toLocaleString()} pages indexed`;
+        }
+        
+        if (newStats.unique_domains > this.previousStats.unique_domains) {
+            animationsRunning.push(this.animateCounter('domains', this.previousStats.unique_domains, newStats.unique_domains));
+        } else {
+            document.getElementById('domains-stat').textContent = `${newStats.unique_domains} domains`;
+        }
+
+        this.previousStats = newStats;
+    }
+
+    animateCounter(type, fromValue, toValue) {
+        const duration = 1500; // 1.5 seconds
+        const startTime = performance.now();
+        const elementId = type === 'pages' ? 'pages-stat' : 'domains-stat';
+        const element = document.getElementById(elementId);
+        const suffix = type === 'pages' ? ' pages indexed' : ' domains';
+        
+        // Add animation class
+        element.classList.add('stat-animating');
+        
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function for smooth animation
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            
+            const currentValue = Math.floor(fromValue + (toValue - fromValue) * easedProgress);
+            
+            // Update only this specific element
+            element.textContent = currentValue.toLocaleString() + suffix;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Animation complete, remove animation class
+                setTimeout(() => {
+                    element.classList.remove('stat-animating');
+                }, 100);
+            }
+        };
+        
+        requestAnimationFrame(animate);
+        return animate;
     }
 
     async performSearch(page = 1) {
@@ -63,8 +139,6 @@ class CozyNetSearch {
 
         this.currentQuery = query;
         this.currentPage = page;
-        this.currentDomain = this.domainFilter.value.trim();
-        this.currentMinWords = this.minWordsFilter.value ? parseInt(this.minWordsFilter.value) : null;
 
         this.showLoading();
         this.hideError();
@@ -76,14 +150,6 @@ class CozyNetSearch {
                 per_page: this.perPage.toString()
             });
 
-            if (this.currentDomain) {
-                params.append('domain', this.currentDomain);
-            }
-
-            if (this.currentMinWords) {
-                params.append('min_words', this.currentMinWords.toString());
-            }
-
             const response = await fetch(`${this.apiBaseUrl}/search?${params}`, {
                 method: 'GET',
                 headers: {
@@ -91,7 +157,7 @@ class CozyNetSearch {
                 },
                 mode: 'cors'
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Search failed: ${response.status} ${response.statusText}`);
             }
@@ -108,9 +174,9 @@ class CozyNetSearch {
 
     displayResults(data) {
         this.resultsContainer.classList.remove('hidden');
-        
+
         this.resultsInfo.innerHTML = `
-            Found ${data.total.toLocaleString()} results 
+            Found ${data.total.toLocaleString()} results
             (showing ${((data.page - 1) * data.per_page) + 1}-${Math.min(data.page * data.per_page, data.total)})
         `;
 
@@ -127,7 +193,7 @@ class CozyNetSearch {
     createResultElement(result) {
         const div = document.createElement('div');
         div.className = 'result-item';
-        
+
         const domain = result.domain || new URL(result.url).hostname;
         const title = result.title || 'Untitled';
         const description = result.description || result.content_summary;
@@ -219,6 +285,22 @@ class CozyNetSearch {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    startStatsPolling() {
+        // Poll stats every 10 seconds
+        this.statsInterval = setInterval(() => {
+            console.log('Polling stats...');
+            this.loadStats();
+        }, 10000);
+        console.log('Stats polling started');
+    }
+
+    stopStatsPolling() {
+        if (this.statsInterval) {
+            clearInterval(this.statsInterval);
+            this.statsInterval = null;
+        }
     }
 }
 

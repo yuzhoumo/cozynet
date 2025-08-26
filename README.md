@@ -17,6 +17,12 @@ of profit-driven intent.
 
 ## Services
 
-- mycelium: web crawler
-- fungicide: page classifier and culler for the mycelium crawler queue
-- taxonomist: page indexer
+- mycelium: web crawling service
+- fungicide: page filtering service for the mycelium crawler queue
+- taxonomist: page indexing service
+- greenhouse: restful querying service
+- cozynet: static frontend search page
+
+## Architecture
+
+![architecture diagram](./docs/diagram.svg)

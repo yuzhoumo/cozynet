@@ -1,6 +1,0 @@
-option go_package = "mycelium/internal/cache";
-
-message RedisQueueItem {
-  required string location = 1;
-  required int32 retries = 2;
-}

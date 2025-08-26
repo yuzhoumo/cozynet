@@ -37,6 +37,9 @@ func initEnvironment(env *Environment) error {
 	env.RedisDB = int(redisDB)
 	env.RedisPass = os.Getenv("REDIS_PASS")
 	env.FilestoreOutDir = os.Getenv("FILESTORE_OUT_DIR")
+	env.FungicideQueueKey = os.Getenv("REDIS_FUNGICIDE_QUEUE_KEY")
+	env.MyceliumIngressKey = os.Getenv("REDIS_MYCELIUM_QUEUE_KEY")
+	env.MyceliumBlacklistKey = os.Getenv("REDIS_MYCELIUM_BLACKLIST_KEY")
 
 	return nil
 }

@@ -173,7 +173,7 @@ def init_app() -> App:
     redis_port             = os.getenv('REDIS_PORT', '')
     redis_max_retries      = os.getenv('REDIS_MAX_RETRIES', '')
     fungicide_queue_key    = os.getenv('REDIS_FUNGICIDE_QUEUE_KEY', '')
-    taxnonomist_queue_key  = os.getenv('REDIS_TAXNOMIST_QUEUE_KEY', '')
+    taxnonomist_queue_key  = os.getenv('REDIS_TAXONOMIST_QUEUE_KEY', '')
     mycelium_queue_key     = os.getenv('REDIS_MYCELIUM_QUEUE_KEY', '')
     mycelium_blacklist_key = os.getenv('REDIS_MYCELIUM_BLACKLIST_KEY', '')
     model_file             = os.getenv('MODEL_FILE', '')

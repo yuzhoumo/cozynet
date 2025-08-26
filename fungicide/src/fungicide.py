@@ -2,7 +2,7 @@ import json
 import os
 import re
 from urllib.parse import urlparse
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, is_dataclass, asdict, fields
 from typing import cast, Any
 
 from dotenv import load_dotenv
@@ -14,6 +14,13 @@ from redis.retry import Retry
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o: object):
+        if is_dataclass(o):
+            return asdict(o)
+        return super().default(o)
 
 
 @dataclass
@@ -104,34 +111,41 @@ class App:
             page = self.wait_for_page()
             not_dev_proba, _ = self.classify(page)
 
-            if not_dev_proba < self.rejection_threshold:
-                self.push_page(page)
-                print("PUSH ", int(not_dev_proba * 100), page.location)
-            else:
+            if not_dev_proba >= self.rejection_threshold:
                 self.blacklist(page)
                 print("BLOCK", int(not_dev_proba * 100), page.location)
+            elif not_dev_proba < 50:
+                self.push_page(page)
+                self.push_outlinks(page)
+                print("PUSH1", int(not_dev_proba * 100), page.location)
+            else:
+                self.push_outlinks(page)
+                print("PUSH2", int(not_dev_proba * 100), page.location)
 
     def wait_for_page(self, timeout=0) -> Page:
         """
         Wait for a page from the redis queue.
         """
         raw = self.redis_client.blpop([self.fungicide_queue_key], timeout)
-        _, value = cast(tuple[str, bytes], raw)
-        json_str = value.decode(encoding='utf-8')
-        return json.loads(json_str, object_hook = Page.as_page)
+        _, value = cast(tuple[str, str], raw)
+        return json.loads(value, object_hook = Page.as_page)
+
+    def push_outlinks(self, page: Page):
+        """
+        Also push the page outlinks to the crawler's ingest queue.
+        """
+        s_to_outlink = lambda s: json.dumps(Outlink(location=s, retries=0),
+                                            cls=EnhancedJSONEncoder)
+        outlinks = [s_to_outlink(link) for link in (page.links or [])]
+
+        if len(outlinks) > 0:
+            self.redis_client.rpush(self.mycelium_queue_key, *outlinks)
 
     def push_page(self, page: Page):
         """
-        Push a page to the redis output queue. Also push the page outlinks to
-        the crawler's ingest queue.
+        Push a page to the redis output queue.
         """
-        s_to_outlink = lambda s: json.dumps(Outlink(location=s, retries=0))
-        outlinks = [s_to_outlink(link) for link in page.links]
-
-        pipe = self.redis_client.pipeline()
-        pipe.rpush(self.taxonomist_queue_key, json.dumps(page))
-        pipe.rpush(self.mycelium_queue_key, *outlinks)
-        pipe.execute()
+        self.redis_client.rpush(self.taxonomist_queue_key, json.dumps(page, cls=EnhancedJSONEncoder))
 
     def blacklist(self, page: Page):
         """
@@ -147,8 +161,7 @@ class App:
         """
         text = page.tokenize()
         matrix = self.vectorizer.transform([text])
-        not_dev, dev = self.clf.predict_proba(matrix)
-        return not_dev, dev
+        return self.clf.predict_proba(matrix)[0]
 
 
 def init_app() -> App:
@@ -162,7 +175,7 @@ def init_app() -> App:
     fungicide_queue_key    = os.getenv('REDIS_FUNGICIDE_QUEUE_KEY', '')
     taxnonomist_queue_key  = os.getenv('REDIS_TAXNOMIST_QUEUE_KEY', '')
     mycelium_queue_key     = os.getenv('REDIS_MYCELIUM_QUEUE_KEY', '')
-    mycelium_blacklist_key = os.getenv('REDIS_MYCLIEUM_BLACKLIST_KEY', '')
+    mycelium_blacklist_key = os.getenv('REDIS_MYCELIUM_BLACKLIST_KEY', '')
     model_file             = os.getenv('MODEL_FILE', '')
     vectorizer_file        = os.getenv('VECTORIZER_FILE', '')
     rejection_threshold    = os.getenv('REJECTION_THRESHOLD', '')

@@ -114,7 +114,9 @@ class App:
             if not_dev_proba >= self.rejection_threshold:
                 self.blacklist(page)
                 print("BLOCK", int(not_dev_proba * 100), page.location)
-            elif not_dev_proba < 50:
+                continue
+
+            if not_dev_proba <= 0.5:
                 self.push_page(page)
                 self.push_outlinks(page)
                 print("PUSH1", int(not_dev_proba * 100), page.location)

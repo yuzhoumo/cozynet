@@ -1,0 +1,14 @@
+[project]
+name = "taxonomist"
+version = "0.1.0"
+description = "webpage indexer"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "redis[hiredis]>=6.4.0",
+    "python-dotenv>=1.1.1",
+    "pydantic>=2.10.0",
+    "asyncio-mqtt>=0.16.0",
+    "pydantic-settings>=2.10.1",
+]

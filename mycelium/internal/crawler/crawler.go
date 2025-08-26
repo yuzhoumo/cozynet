@@ -75,6 +75,8 @@ func NewCrawler(cache CrawlerCache, store Store, opt ...CrawlerOption) *Crawler 
 		}
 	}
 
+	c.client.Timeout = 10 * time.Second
+
 	c.cache = cache
 	c.store = store
 

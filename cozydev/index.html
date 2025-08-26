@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CozyNet Search</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CozyNet Search</h1>
+            <div class="stats" id="stats"></div>
+        </header>
+
+        <main>
+            <form id="search-form" class="search-form">
+                <div class="search-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Search the web..."
+                        autocomplete="off"
+                        required
+                    >
+                    <button type="submit" id="search-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="filters">
+                    <input 
+                        type="text" 
+                        id="domain-filter" 
+                        placeholder="Domain filter (optional)"
+                    >
+                    <input 
+                        type="number" 
+                        id="min-words" 
+                        placeholder="Min words"
+                        min="1"
+                    >
+                </div>
+            </form>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                Searching...
+            </div>
+
+            <div id="error" class="error hidden"></div>
+
+            <div id="results-container" class="results-container hidden">
+                <div id="results-info" class="results-info"></div>
+                <div id="results" class="results"></div>
+                <div id="pagination" class="pagination"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

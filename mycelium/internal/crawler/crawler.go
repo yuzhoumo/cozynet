@@ -2,11 +2,11 @@ package crawler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -38,6 +38,9 @@ type CrawlerCache interface {
 	QueueSize(context.Context) (int32, error)
 	Visit(context.Context, QueueItem) error
 	IsVisited(context.Context, QueueItem) (bool, error)
+	PushToFungicide(context.Context, string, string) error
+	PopFromMyceliumIngress(context.Context, string) (string, error)
+	IsBlacklisted(context.Context, string, string) (bool, error)
 }
 
 type StringChooser interface {
@@ -45,14 +48,17 @@ type StringChooser interface {
 }
 
 type Crawler struct {
-	client           *http.Client
-	userAgentChooser StringChooser
-	proxyChooser     StringChooser
-	cache            CrawlerCache
-	store            Store
-	urlFilters       []UrlFilter
-	maxIdleSeconds   int
-	idleSeconds      int
+	client                 *http.Client
+	userAgentChooser       StringChooser
+	proxyChooser          StringChooser
+	cache                 CrawlerCache
+	store                 Store
+	urlFilters            []UrlFilter
+	maxIdleSeconds        int
+	idleSeconds           int
+	fungicideQueueKey     string
+	myceliumIngressKey    string
+	myceliumBlacklistKey  string
 }
 
 type CrawlerOption func(*Crawler)
@@ -109,6 +115,24 @@ func WithUserAgentChooser(userAgentChooser StringChooser) CrawlerOption {
 	}
 }
 
+func WithFungicideQueueKey(key string) CrawlerOption {
+	return func(c *Crawler) {
+		c.fungicideQueueKey = key
+	}
+}
+
+func WithMyceliumIngressKey(key string) CrawlerOption {
+	return func(c *Crawler) {
+		c.myceliumIngressKey = key
+	}
+}
+
+func WithMyceliumBlacklistKey(key string) CrawlerOption {
+	return func(c *Crawler) {
+		c.myceliumBlacklistKey = key
+	}
+}
+
 func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
 	size, err := c.cache.QueueSize(ctx)
 	if err != nil {
@@ -131,26 +155,10 @@ func (c *Crawler) Seed(ctx context.Context, seed []QueueItem) error {
 }
 
 func (c *Crawler) Crawl(ctx context.Context, makeQueueItem func(*url.URL) QueueItem) error {
-outer:
 	for {
 		curr, err := c.cache.QueuePop(ctx)
 		if err != nil {
 			return err
-		}
-
-		for curr == nil {
-			if c.idleSeconds > c.maxIdleSeconds {
-				break outer
-			}
-
-			// idle while queue is empty
-			c.idleSeconds += 1
-			time.Sleep(time.Second)
-
-			curr, err = c.cache.QueuePop(ctx)
-			if err != nil {
-				return err
-			}
 		}
 
 		if curr.GetRetries() > maxRetries {
@@ -175,9 +183,20 @@ outer:
 			continue
 		}
 
-		if c.filter(parsedUrl) {
-			fmt.Printf("[BLOCKED] %s\n", curr.GetLocation())
-			continue
+		// if c.filter(parsedUrl) {
+		// 	fmt.Printf("[BLOCKED] %s\n", curr.GetLocation())
+		// 	continue
+		// }
+
+		// Check domain blacklist from fungicide
+		if c.myceliumBlacklistKey != "" {
+			isBlacklisted, err := c.cache.IsBlacklisted(ctx, parsedUrl.Hostname(), c.myceliumBlacklistKey)
+			if err != nil {
+				fmt.Printf("failed to check blacklist for %s: %s\n", parsedUrl.Hostname(), err.Error())
+			} else if isBlacklisted {
+				fmt.Printf("[BLACKLISTED] %s\n", curr.GetLocation())
+				continue
+			}
 		}
 
 		page, err := c.GetPage(ctx, parsedUrl)
@@ -186,17 +205,75 @@ outer:
 			continue
 		}
 
-		_, err = c.store.Store(page, ".json") // TODO: record page id in db
-		if err != nil {
-			fmt.Printf("failed to store page: %s\n", err.Error())
-		}
+		// Send page to fungicide for classification instead of storing to file
+		if c.fungicideQueueKey != "" {
+			pageJSON, err := page.Marshal()
+			if err != nil {
+				fmt.Printf("failed to marshal page %s: %s\n", curr.GetLocation(), err.Error())
+				continue
+			}
 
-		for _, neighbor := range page.Links {
-			c.cache.QueuePush(ctx, makeQueueItem(&neighbor))
+			err = c.cache.PushToFungicide(ctx, string(pageJSON), c.fungicideQueueKey)
+			if err != nil {
+				fmt.Printf("failed to push page to fungicide %s: %s\n", curr.GetLocation(), err.Error())
+				continue
+			}
+
+			fmt.Printf("[SENT TO FUNGICIDE] %s\n", curr.GetLocation())
+		} else {
+			// Fallback to file storage if fungicide not configured
+			_, err = c.store.Store(page, ".json")
+			if err != nil {
+				fmt.Printf("failed to store page: %s\n", err.Error())
+			}
+
+			// Direct link queuing only if not using fungicide
+			for _, neighbor := range page.Links {
+				c.cache.QueuePush(ctx, makeQueueItem(&neighbor))
+			}
 		}
 	}
 
 	return nil
+}
+
+func (c *Crawler) ConsumeIngressQueue(ctx context.Context, makeQueueItem func(*url.URL) QueueItem) error {
+	if c.myceliumIngressKey == "" {
+		return fmt.Errorf("mycelium ingress queue key not configured")
+	}
+
+	for {
+		incomingJSON, err := c.cache.PopFromMyceliumIngress(ctx, c.myceliumIngressKey)
+		if err != nil {
+			return fmt.Errorf("failed to pop from ingress queue: %w", err)
+		}
+
+		// Parse the incoming JSON (should be an Outlink from fungicide)
+		var outlink struct {
+			Location string `json:"location"`
+			Retries  int    `json:"retries"`
+		}
+
+		if err := json.Unmarshal([]byte(incomingJSON), &outlink); err != nil {
+			fmt.Printf("failed to parse incoming JSON: %s\n", err.Error())
+			continue
+		}
+
+		parsedUrl, err := url.Parse(outlink.Location)
+		if err != nil {
+			fmt.Printf("failed to parse incoming URL %s: %s\n", outlink.Location, err.Error())
+			continue
+		}
+
+		// Add to crawler's main queue
+		queueItem := makeQueueItem(parsedUrl)
+		if err := c.cache.QueuePush(ctx, queueItem); err != nil {
+			fmt.Printf("failed to queue incoming URL %s: %s\n", outlink.Location, err.Error())
+			continue
+		}
+
+		fmt.Printf("[INGRESS] %s\n", outlink.Location)
+	}
 }
 
 func (c *Crawler) filter(loc *url.URL) bool {

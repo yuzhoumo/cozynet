@@ -51,9 +51,26 @@ func main() {
 		options = append(options, crawler.WithUrlFilters([]crawler.UrlFilter{filter}))
 	}
 
+	// Add fungicide integration options
+	if env.FungicideQueueKey != "" {
+		options = append(options, crawler.WithFungicideQueueKey(env.FungicideQueueKey))
+	}
+	if env.MyceliumIngressKey != "" {
+		options = append(options, crawler.WithMyceliumIngressKey(env.MyceliumIngressKey))
+	}
+	if env.MyceliumBlacklistKey != "" {
+		options = append(options, crawler.WithMyceliumBlacklistKey(env.MyceliumBlacklistKey))
+	}
+
 	filestore := store.NewFileStore(env.FilestoreOutDir)
 	app.crawler = *crawler.NewCrawler(&app.cache, filestore, options...)
 
 	app.seed(ctx)
+
+	// Run crawler and ingress consumer concurrently if fungicide integration is enabled
+	if env.MyceliumIngressKey != "" {
+		go app.consumeIngress(ctx)
+	}
+
 	app.crawl(ctx)
 }

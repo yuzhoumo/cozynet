@@ -11,10 +11,13 @@ import (
 )
 
 type Environment struct {
-	RedisAddr       string
-	RedisPass       string
-	RedisDB         int
-	FilestoreOutDir string
+	RedisAddr              string
+	RedisPass              string
+	RedisDB                int
+	FilestoreOutDir        string
+	FungicideQueueKey      string
+	MyceliumIngressKey     string
+	MyceliumBlacklistKey   string
 }
 
 type MyceliumConfig struct {
@@ -71,4 +74,15 @@ func (app *Mycelium) crawl(ctx context.Context) {
 	}
 
 	wg.Wait()
+}
+
+func (app *Mycelium) consumeIngress(ctx context.Context) {
+	makeQueueItem := func(u *url.URL) crawler.QueueItem {
+		return cache.NewQueueItem(u)
+	}
+
+	err := app.crawler.ConsumeIngressQueue(ctx, makeQueueItem)
+	if err != nil {
+		panic(fmt.Errorf("ingress consumer failed with error: %w", err))
+	}
 }

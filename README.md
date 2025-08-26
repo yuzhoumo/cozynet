@@ -1,4 +1,4 @@
-# cozynet.dev
+# 🌱 cozynet.dev
 
 > "The original idea of the web was that it should be a collaborative space
 > where you can communicate through sharing information." - Tim Berners-Lee
